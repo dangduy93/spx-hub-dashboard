@@ -40,7 +40,7 @@
 <body class="flex h-screen overflow-hidden text-slate-700">
 
     <!-- MOBILE OVERLAY BACKDROP -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden md:hidden transition-opacity"></div>
+    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-25 hidden md:hidden transition-opacity"></div>
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 select-none transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
@@ -120,7 +120,7 @@
 
     <!-- MAIN CONTENT AREA -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full">
-        <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3.5 flex items-center justify-between sticky top-0 z-10 shadow-xs">
+        <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-1 text-lg">
                     <i class="fa-solid fa-bars"></i>
@@ -257,7 +257,7 @@
             overlay.classList.toggle('hidden');
         }
 
-        function updateDashboardUI(data) {
+        function updateDashboardUI(data, isFromCache = false) {
             if (data.tong_don_giao_kv1 !== undefined) {
                 document.getElementById('total-orders-kv1').innerText = Number(data.tong_don_giao_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-orders-kv2').innerText = Number(data.tong_don_giao_kv2).toLocaleString('vi-VN');
@@ -356,16 +356,19 @@
                 document.getElementById('hub-title').innerText = "Tổng quan - " + data.ten_hub;
                 document.getElementById('hub-location-name').innerText = data.ten_hub;
             }
-            if (data.trang_thai_api) {
+            if (data.trang_thai_api && !isFromCache) {
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${data.trang_thai_api}`;
             }
 
-            const timeString = data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN');
+            // Nếu là load từ Cache cục bộ, hiển thị trạng thái đang đồng bộ để người dùng phân biệt
+            const timeString = isFromCache ? "Đang đồng bộ..." : (data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN'));
             const timeIds = ['update-time-kv1', 'update-time-kv2', 'inventory-time-kv1', 'inventory-time-kv2', 'attempted-time-kv1', 'attempted-time-kv2', 'warehouse-time-kv1', 'warehouse-time-kv2', 'pickup-time-kv1', 'pickup-time-kv2'];
             timeIds.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = timeString; });
 
-            // Lưu trữ lại dữ liệu vào LocalStorage để lần sau mở lên có hiển thị tức thì
-            localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
+            // Lưu lại trữ vào LocalStorage nếu không phải dữ liệu cache
+            if (!isFromCache) {
+                localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
+            }
         }
 
         function connectSSE() {
@@ -374,7 +377,7 @@
             eventSource.addEventListener('update', function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    updateDashboardUI(data);
+                    updateDashboardUI(data, false); // Nhận dữ liệu real-time mới từ server
                 } catch (e) { console.error("Lỗi parse dữ liệu SSE:", e); }
             });
             
@@ -391,8 +394,8 @@
             if (cachedString) {
                 try {
                     const cachedData = JSON.parse(cachedString);
-                    updateDashboardUI(cachedData);
-                    document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu cache tạm thời, đang đồng bộ trực tiếp...`;
+                    updateDashboardUI(cachedData, true); // Đánh dấu là hiển thị từ cache tạm thời
+                    document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang đồng bộ trực tiếp...`;
                 } catch (e) {
                     console.error("Lỗi đọc cache LocalStorage:", e);
                 }
