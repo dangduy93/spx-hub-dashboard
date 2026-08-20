@@ -7,7 +7,6 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 import httpx
-from playwright.sync_api import sync_playwright
 from sse_starlette.sse import EventSourceResponse
 
 # Cấu hình logging
@@ -18,44 +17,20 @@ COOKIE_FILE = "cookies.json"
 SPX_API_URL = "https://spx.shopee.vn/api/fleet_order/order/tracking_list/search"
 FORECAST_STATUS = "39,591,8,9,33,34,35,15,36"
 
-# --- TÍNH NĂNG ĐĂNG NHẬP LẤY COOKIE ---
-def get_cookies_via_browser() -> dict:
+# --- TẢI COOKIE TỪ FILE JSON (Tối ưu cho Cloud/Render) ---
+def load_cookies() -> dict:
     if os.path.exists(COOKIE_FILE):
         try:
             with open(COOKIE_FILE, "r", encoding="utf-8") as f:
-                logger.info("Đã tải cookie từ file cache cục bộ.")
+                logger.info("Đã tải cookie từ file cache cục bộ thành công.")
                 return json.load(f)
         except Exception as e:
             logger.warning(f"Lỗi đọc file cookie: {e}")
+    
+    logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên GitHub.")
+    return {}
 
-    logger.info("Đang mở trình duyệt để đăng nhập SPX lấy cookie...")
-    cookies_dict = {}
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto("https://spx.shopee.vn/")
-        
-        try:
-            page.wait_for_url("https://spx.shopee.vn/**", timeout=120000)
-            page.wait_for_timeout(3000)
-        except Exception as e:
-            logger.error(f"Hết thời gian chờ đăng nhập: {e}")
-            browser.close()
-            return {}
-        
-        raw_cookies = context.cookies("https://spx.shopee.vn")
-        for cookie in raw_cookies:
-            cookies_dict[cookie["name"]] = cookie["value"]
-        browser.close()
-        
-    if cookies_dict:
-        with open(COOKIE_FILE, "w", encoding="utf-8") as f:
-            json.dump(cookies_dict, f, indent=4)
-        logger.info("Đã lưu cookie mới thành công.")
-    return cookies_dict
-
-SPX_COOKIES = get_cookies_via_browser()
+SPX_COOKIES = load_cookies()
 SPX_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Content-Type": "application/json",
@@ -193,8 +168,9 @@ async def drivers_view():
 async def stream(request: Request):
     async def gen():
         while not await request.is_disconnected():
-            yield {"event": "update", "data": json.dumps(await get_latest_data(), ensure_ascii=False)}
-            await asyncio.sleep(300)
+            latest_data = await get_latest_data()
+            yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
+            await asyncio.sleep(5)
     return EventSourceResponse(gen())
 
 if __name__ == "__main__":
