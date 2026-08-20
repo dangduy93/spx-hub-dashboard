@@ -160,7 +160,7 @@ async def stream(request: Request):
         while not await request.is_disconnected():
             latest_data = await get_latest_data()
             yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
-            await asyncio.sleep(5)
+            await asyncio.sleep(360)
     return EventSourceResponse(gen())
 
 if __name__ == "__main__":
