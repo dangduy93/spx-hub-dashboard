@@ -27,7 +27,7 @@ def load_cookies() -> dict:
         except Exception as e:
             logger.warning(f"Lỗi đọc file cookie: {e}")
     
-    logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên GitHub.")
+    logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên Render.")
     return {}
 
 SPX_COOKIES = load_cookies()
@@ -42,10 +42,14 @@ SPX_HEADERS = {
 ZONES_KV1_STR = "Z1.02.BH.01,Z1.01.CQ.01,Z1.01.CQ.02,Z1.01.CLỚN.01,Z1.01.AĐ.04,Z1.01.CQ.03,Z1.01.AĐ.05,Z1.01.AĐ.02,Z1.01.AĐ.01,Z1.01.AĐ.03,Z1.01.CLỚN.05,Z1.01.CLỚN.06,Z1.01.CLỚN.02,Z1.01.CLỚN.03,Z1.02.BTIÊN.01,Z1.02.BTÂY.02,Z1.02.BTÂY.01,Z1.02.BTÂY.03,Z1.02.PL.03,Z1.02.PL.02,Z1.02.PL.01,Z1.01.BP.03,Z1.02.BTIÊN.04,Z1.01.BP.02,Z1.01.BP.01,Z1.02.BTIÊN.05,Z1.02.BTIÊN.02,Z1.02.BTIÊN.03,Z1.01.BP.04,Z1.02.PĐ.05,Z1.02.PĐ.04,Z1.02.BĐ.02,Z1.02.BĐ.01,Z1.02.PĐ.03,Z1.02.PĐ.02,Z1.02.PĐ.01,Z1.02.CH.08,Z1.02.CH.01,Z1.02.CH.02,Z1.02.CH.03,Z1.01.PT.05,Z1.02.CH.04,Z1.01.MP.03,Z1.01.CLỚN.04,Z1.01.MP.04,Z1.01.PT.04,Z1.01.PT.02,Z1.01.HB.01,Z1.01.HB.02,Z1.01.BTHỚI.03,Z1.01.BTHỚI.02,Z1.01.PT.03,Z1.01.MP.01,Z1.01.MP.06,Z1.01.MP.02,Z1.01.BTHỚI.01,Z1.01.MP.05,Z1.02.BH.02,Z1.02.CH.07,Z1.02.CH.06,Z1.01.BTHỚI.04,Z1.02.BĐ.03"
 ZONES_KV2_STR = "Z2.02.TB.01,Z2.02.TĐ.01,Z2.02.TĐ.02,Z2.02.LX.01,Z2.02.TB.02,Z2.02.TB.03,Z2.02.TĐ.05,Z2.02.HB.02,Z2.02.CK.02,Z2.02.CK.03,Z2.02.ĐN.01,Z2.02.ĐN.02,Z2.02.ĐN.03,Z2.02.PN.02,Z2.02.CK.04,Z2.02.CK.01,Z2.02.CK.05,Z2.02.PN.04,Z2.02.PN.03,Z2.02.PN.05,Z2.01.TH.03,Z2.01.BH.01,Z2.01.TH.02,Z2.01.TH.01,Z2.01.TSN.03,Z2.01.BH.02,Z2.01.TB.02,Z2.01.TSN.02,Z2.01.TSH.03,Z2.01.TSH.01,Z2.01.TSH.02,Z2.01.TSN.01,Z2.01.BH.03,Z2.01.TB.01,Z2.01.TB.03,Z2.02.PN.01,Z2.02.LX.03,Z2.02.LX.02,Z2.02.HB.01.A,Z2.02.HB.01.C,Z2.02.HB.01.B,Z2.02.HB.01.D,Z2.02.HB.01.E,Z2.02.HB.03.A,Z2.02.HB.03.B"
 
-app = FastAPI(title="SPX Hub Backend")
+app = FastAPI(title="SPX Hub Backend - Optimized")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-cache_store = {"data": None, "expire_time": datetime.min}
+# Bộ nhớ đệm toàn cục (Global Cache) phục vụ real-time siêu nhanh
+global_cache = {
+    "data": None,
+    "last_updated": "Đang khởi tạo..."
+}
 
 async def fetch_api(client, payload):
     try:
@@ -60,11 +64,8 @@ async def fetch_api(client, payload):
         logger.error(f"API Error: {e}")
     return 0, []
 
-async def get_latest_data():
+async def fetch_all_data_from_spx():
     now = datetime.now()
-    if cache_store["data"] and now < cache_store["expire_time"]:
-        return cache_store["data"]
-
     start = int(datetime.combine(now.date(), time.min).timestamp())
     end = int(datetime.combine(now.date(), time.max).timestamp())
     time_str = f"{start},{end}"
@@ -81,8 +82,9 @@ async def get_latest_data():
             return total
 
         async def get_inv(zone):
-            un, att, page = 0, 0, 1
-            while True:
+            un, att = 0, 0
+            # Giới hạn tối đa 2 trang để tối ưu thời gian phản hồi
+            for page in range(1, 3):
                 p = {"count": 100, "current_station_ids": "4232", "current_station_received_time": time_str, "order_status": "1", "page_no": page, "zone_id": zone}
                 _, orders = await fetch_api(client, p)
                 if not orders: break
@@ -90,13 +92,12 @@ async def get_latest_data():
                     if o.get("on_hold_times", 0) == 0: un += 1
                     else: att += 1
                 if len(orders) < 100: break
-                page += 1
             return un, att
 
         async def get_drivers_detail(zone):
             drivers = {}
-            page = 1
-            while True:
+            # Giới hạn tối đa 2 trang để tránh nghẽn mạng
+            for page in range(1, 3):
                 p = {"count": 100, "current_station_ids": "4232", "current_station_received_time": time_str, "order_status": "2,4,5", "page_no": page, "zone_id": zone}
                 _, orders = await fetch_api(client, p)
                 if not orders: break
@@ -110,7 +111,6 @@ async def get_latest_data():
                     elif st == "5": drivers[d_id]["onhold"] += 1
                     elif st == "4": drivers[d_id]["thanh_cong"] += 1
                 if len(orders) < 100: break
-                page += 1
             return list(drivers.values())
 
         res = await asyncio.gather(
@@ -123,6 +123,7 @@ async def get_latest_data():
         
         data = {
             "ten_hub": "52-HCM SDD-01 Hub",
+            "trang_thai_api": "Đã kết nối SPX API thành công",
             "tong_don_giao_kv1": res[0], "tong_don_giao_kv2": res[1],
             "tong_don_ton_kho_chua_attem_kv1": res[2][0], "tong_don_ton_kho_da_attem_kv1": res[2][1],
             "tong_don_ton_kho_chua_attem_kv2": res[3][0], "tong_don_ton_kho_da_attem_kv2": res[3][1],
@@ -131,10 +132,36 @@ async def get_latest_data():
             "drivers_detail_kv1": res[8], "drivers_detail_kv2": res[9],
             "thoi_gian_cap_nhat": now.strftime("%H:%M:%S")
         }
-        cache_store.update({"data": data, "expire_time": now + timedelta(seconds=60)})
         return data
 
-# --- ROUTE TRẢ VỀ GIAO DIỆN INDEX.HTML THAY VÌ CODE HTML THỦ CÔNG ---
+# --- TIẾN TRÌNH NỀN TỰ ĐỘNG CẬP NHẬT ---
+async def background_data_updater():
+    while True:
+        try:
+            logger.info("Đang chạy tiến trình ngầm làm mới dữ liệu từ SPX API...")
+            data = await fetch_all_data_from_spx()
+            global_cache["data"] = data
+            global_cache["last_updated"] = datetime.now().strftime("%H:%M:%S")
+            logger.info("Làm mới dữ liệu nền thành công!")
+        except Exception as e:
+            logger.error(f"Lỗi background_data_updater: {e}")
+        
+        # Đợi 45 giây mới gọi lại SPX API để tránh quá tải/bị chặn
+        await asyncio.sleep(45)
+
+@app.on_event("startup")
+async def startup_event():
+    # Fetch dữ liệu ngay khi khởi động server
+    try:
+        global_cache["data"] = await fetch_all_data_from_spx()
+        global_cache["last_updated"] = datetime.now().strftime("%H:%M:%S")
+    except Exception as e:
+        logger.error(f"Lỗi khởi tạo dữ liệu lúc start: {e}")
+    
+    # Chạy vòng lặp ngầm
+    asyncio.create_task(background_data_updater())
+
+# --- ROUTES ---
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     if os.path.exists("index.html"):
@@ -149,14 +176,20 @@ async def serve_drivers_view():
 
 @app.get("/api/dashboard")
 async def dashboard(): 
-    return await get_latest_data()
+    if global_cache["data"]:
+        return global_cache["data"]
+    return await fetch_all_data_from_spx()
 
 @app.get("/api/stream")
 async def stream(request: Request):
     async def gen():
         while not await request.is_disconnected():
-            latest_data = await get_latest_data()
-            yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
+            # Lấy trực tiếp từ cache trong RAM, không gọi API ngầm nữa -> Load cực nhanh
+            data_to_send = global_cache["data"] or {
+                "ten_hub": "52-HCM SDD-01 Hub",
+                "trang_thai_api": "Đang khởi tạo dữ liệu..."
+            }
+            yield {"event": "update", "data": json.dumps(data_to_send, ensure_ascii=False)}
             await asyncio.sleep(5)
     return EventSourceResponse(gen())
 
