@@ -366,19 +366,23 @@
         }
 
         function connectSSE() {
-            const eventSource = new EventSource('http://127.0.0.1:8000/api/stream');
+            // Đã sửa thành đường dẫn tương đối để chạy chuẩn trên Render và Local
+            const eventSource = new EventSource('/api/stream');
+            
             eventSource.addEventListener('update', function(event) {
                 try {
                     const data = JSON.parse(event.data);
                     updateDashboardUI(data);
                 } catch (e) { console.error("Lỗi parse dữ liệu SSE:", e); }
             });
+            
             eventSource.onerror = function(error) {
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
                 eventSource.close();
                 setTimeout(connectSSE, 30000);
             };
         }
+        
         document.addEventListener('DOMContentLoaded', connectSSE);
     </script>
 </body>
