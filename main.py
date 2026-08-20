@@ -5,7 +5,7 @@ import logging
 import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 import httpx
 from sse_starlette.sse import EventSourceResponse
 
@@ -17,7 +17,7 @@ COOKIE_FILE = "cookies.json"
 SPX_API_URL = "https://spx.shopee.vn/api/fleet_order/order/tracking_list/search"
 FORECAST_STATUS = "39,591,8,9,33,34,35,15,36"
 
-# --- TẢI COOKIE TỪ FILE JSON (Tối ưu cho Cloud/Render) ---
+# --- TẢI COOKIE TỪ FILE JSON ---
 def load_cookies() -> dict:
     if os.path.exists(COOKIE_FILE):
         try:
@@ -134,35 +134,22 @@ async def get_latest_data():
         cache_store.update({"data": data, "expire_time": now + timedelta(seconds=60)})
         return data
 
+# --- ROUTE TRẢ VỀ GIAO DIỆN INDEX.HTML THAY VÌ CODE HTML THỦ CÔNG ---
+@app.get("/", response_class=FileResponse)
+async def serve_index():
+    if os.path.exists("index.html"):
+        return FileResponse("index.html")
+    return HTMLResponse("<h1>Không tìm thấy file index.html trên hệ thống!</h1>", status_code=404)
+
+@app.get("/drivers-view", response_class=FileResponse)
+async def serve_drivers_view():
+    if os.path.exists("index.html"):
+        return FileResponse("index.html")
+    return HTMLResponse("<h1>Không tìm thấy file index.html trên hệ thống!</h1>", status_code=404)
+
 @app.get("/api/dashboard")
-async def dashboard(): return await get_latest_data()
-
-@app.get("/drivers-view", response_class=HTMLResponse)
-async def drivers_view():
-    data = await get_latest_data()
-    kv1, kv2 = data.get("drivers_detail_kv1", []), data.get("drivers_detail_kv2", [])
-    
-    def render_table(drivers):
-        rows = "".join([f"<tr><td style='padding:8px; border:1px solid #ddd;'>{d['id']}</td><td style='padding:8px; border:1px solid #ddd;'>{d['ten']}</td><td style='padding:8px; border:1px solid #ddd; text-align:center; color:blue; font-weight:bold;'>{d['dang_giao']}</td><td style='padding:8px; border:1px solid #ddd; text-align:center; color:orange; font-weight:bold;'>{d['onhold']}</td><td style='padding:8px; border:1px solid #ddd; text-align:center; color:green; font-weight:bold;'>{d['thanh_cong']}</td></tr>" for d in drivers])
-        return f"<table style='width:100%; border-collapse:collapse; margin-bottom:20px; background:white;'><tr style='background:#f8f9fa;'><th style='padding:10px; border:1px solid #ddd;'>ID</th><th style='padding:10px; border:1px solid #ddd;'>Tên</th><th style='padding:10px; border:1px solid #ddd;'>Giao</th><th style='padding:10px; border:1px solid #ddd;'>Onhold</th><th style='padding:10px; border:1px solid #ddd;'>Xong</th></tr>{rows or '<tr><td colspan=5 style=text-align:center;padding:10px;>Không có dữ liệu</td></tr>'}</table>"
-
-    return HTMLResponse(f"""
-    <html><head><meta http-equiv="refresh" content="60"><title>Dashboard SPX</title></head>
-    <body style="font-family:Arial; background:#f4f6f8; padding:20px;">
-        <div style="max-width:1000px; margin:auto; background:white; padding:20px; border-radius:8px;">
-            <h1>Dashboard Hub: {data.get('ten_hub')}</h1>
-            <div style="display:flex; gap:20px; margin-bottom:20px;">
-                <div style="flex:1; background:#e3f2fd; padding:15px; border-radius:6px; border-left:5px solid #2196f3;">
-                    <h3>Khu vực 1 (KV1)</h3><p style="font-weight:bold; font-size:18px;">{len(kv1)} DRIVER ĐANG HOẠT ĐỘNG</p>
-                </div>
-                <div style="flex:1; background:#fff3e0; padding:15px; border-radius:6px; border-left:5px solid #ff9800;">
-                    <h3>Khu vực 2 (KV2)</h3><p style="font-weight:bold; font-size:18px;">{len(kv2)} DRIVER ĐANG HOẠT ĐỘNG</p>
-                </div>
-            </div>
-            <h2>Chi tiết Driver KV1</h2>{render_table(kv1)}
-            <h2>Chi tiết Driver KV2</h2>{render_table(kv2)}
-        </div>
-    </body></html>""")
+async def dashboard(): 
+    return await get_latest_data()
 
 @app.get("/api/stream")
 async def stream(request: Request):
