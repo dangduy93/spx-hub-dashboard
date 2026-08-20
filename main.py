@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, time, timedelta
+from datetime import datetime, time, timedelta, timezone
 import json
 import logging
 import os
@@ -16,6 +16,9 @@ logger = logging.getLogger("SPX-Hub")
 COOKIE_FILE = "cookies.json"
 SPX_API_URL = "https://spx.shopee.vn/api/fleet_order/order/tracking_list/search"
 FORECAST_STATUS = "39,591,8,9,33,34,35,15,36"
+
+# Định nghĩa múi giờ Việt Nam (UTC+7)
+VIETNAM_TZ = timezone(timedelta(hours=7))
 
 # --- TẢI COOKIE TỪ FILE JSON ---
 def load_cookies() -> dict:
@@ -45,7 +48,7 @@ ZONES_KV2_STR = "Z2.02.TB.01,Z2.02.TĐ.01,Z2.02.TĐ.02,Z2.02.LX.01,Z2.02.TB.02,Z
 app = FastAPI(title="SPX Hub Backend")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-cache_store = {"data": None, "expire_time": datetime.min}
+cache_store = {"data": None, "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ)}
 
 async def fetch_api(client, payload):
     try:
@@ -61,12 +64,13 @@ async def fetch_api(client, payload):
     return 0, []
 
 async def get_latest_data():
-    now = datetime.now()
+    # Lấy thời gian hiện tại theo múi giờ Việt Nam (UTC+7)
+    now = datetime.now(VIETNAM_TZ)
     if cache_store["data"] and now < cache_store["expire_time"]:
         return cache_store["data"]
 
-    start = int(datetime.combine(now.date(), time.min).timestamp())
-    end = int(datetime.combine(now.date(), time.max).timestamp())
+    start = int(datetime.combine(now.date(), time.min).replace(tzinfo=VIETNAM_TZ).timestamp())
+    end = int(datetime.combine(now.date(), time.max).replace(tzinfo=VIETNAM_TZ).timestamp())
     time_str = f"{start},{end}"
 
     async with httpx.AsyncClient() as client:
@@ -134,7 +138,6 @@ async def get_latest_data():
         cache_store.update({"data": data, "expire_time": now + timedelta(seconds=300)})
         return data
 
-# --- ROUTE TRẢ VỀ GIAO DIỆN INDEX.HTML THAY VÌ CODE HTML THỦ CÔNG ---
 @app.get("/", response_class=FileResponse)
 async def serve_index():
     if os.path.exists("index.html"):
