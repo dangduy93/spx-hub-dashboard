@@ -131,7 +131,7 @@ async def get_latest_data():
             "drivers_detail_kv1": res[8], "drivers_detail_kv2": res[9],
             "thoi_gian_cap_nhat": now.strftime("%H:%M:%S")
         }
-        cache_store.update({"data": data, "expire_time": now + timedelta(seconds=60)})
+        cache_store.update({"data": data, "expire_time": now + timedelta(seconds=300)})
         return data
 
 # --- ROUTE TRẢ VỀ GIAO DIỆN INDEX.HTML THAY VÌ CODE HTML THỦ CÔNG ---
