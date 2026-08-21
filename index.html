@@ -384,7 +384,7 @@
             eventSource.onerror = function(error) {
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
                 eventSource.close();
-                setTimeout(connectSSE, 30000);
+                setTimeout(connectSSE, 5000);
             };
         }
         
