@@ -253,17 +253,7 @@
     </main>
 
     <script>
-        // Chặn phím F5 / Ctrl+R khi giao diện đang khóa ngầm
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
-                const overlay = document.getElementById('loading-overlay');
-                if (overlay && !overlay.classList.contains('hidden')) {
-                    event.preventDefault(); // Hủy sự kiện làm mới trang
-                }
-            }
-        });
-
-        // Hàm khóa giao diện ngầm
+        // Hàm khóa giao diện ngầm (không hiện bảng thông báo)
         function lockUserInterface() {
             const overlay = document.getElementById('loading-overlay');
             if (overlay) {
@@ -293,7 +283,7 @@
         }
 
         function updateDashboardUI(data, isFromCache = false) {
-            // Nhận được dữ liệu thì tự động mở khóa giao diện
+            // Khi nhận được dữ liệu mới, tự động mở khóa giao diện
             unlockUserInterface();
 
             if (data.tong_don_giao_kv1 !== undefined) {
@@ -409,7 +399,7 @@
 
         let eventSource = null;
         function connectSSE() {
-            // Khóa giao diện ngầm khi kết nối hoặc chờ dữ liệu từ backend
+            // Khóa giao diện ngầm khi bắt đầu kết nối/lấy dữ liệu
             lockUserInterface();
 
             if (eventSource) {
