@@ -3,10 +3,11 @@ from datetime import datetime, time, timedelta, timezone
 import json
 import logging
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
 import httpx
+from sse_starlette.sse import EventSourceResponse
 
 # Cấu hình logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -151,6 +152,16 @@ async def serve_drivers_view():
 @app.get("/api/dashboard")
 async def dashboard(): 
     return await get_latest_data()
+
+@app.get("/api/stream")
+async def stream(request: Request):
+    async def gen():
+        while not await request.is_disconnected():
+            latest_data = await get_latest_data()
+            yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
+            # Đợi 60 giây trước khi đẩy dữ liệu tiếp theo (đồng bộ với cơ chế cache 300s)
+            await asyncio.sleep(60)
+    return EventSourceResponse(gen())
 
 if __name__ == "__main__":
     import uvicorn
