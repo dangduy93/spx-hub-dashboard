@@ -30,7 +30,7 @@ def load_cookies() -> dict:
         except Exception as e:
             logger.warning(f"Lỗi đọc file cookie: {e}")
 
-    logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên GitHub.")
+    logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên hệ thống.")
     return {}
 
 SPX_COOKIES = load_cookies()
@@ -48,7 +48,11 @@ ZONES_KV2_STR = "Z2.02.TB.01,Z2.02.TĐ.01,Z2.02.TĐ.02,Z2.02.LX.01,Z2.02.TB.02,Z
 app = FastAPI(title="SPX Hub Backend")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
-cache_store = {"data": None, "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ)}
+# Cấu hình cache toàn cục lưu kết quả và mốc thời gian cập nhật
+cache_store = {
+    "data": None,
+    "last_updated": datetime.min.replace(tzinfo=VIETNAM_TZ)
+}
 
 async def fetch_api(client, payload):
     try:
@@ -65,7 +69,9 @@ async def fetch_api(client, payload):
 
 async def get_latest_data():
     now = datetime.now(VIETNAM_TZ)
-    if cache_store["data"] and now < cache_store["expire_time"]:
+    
+    # Nếu cache đã có và thời gian cách lần gọi trước dưới 60 giây thì trả về luôn cache cũ
+    if cache_store["data"] and (now - cache_store["last_updated"]).total_seconds() < 60:
         return cache_store["data"]
 
     start = int(datetime.combine(now.date(), time.min).replace(tzinfo=VIETNAM_TZ).timestamp())
@@ -144,7 +150,10 @@ async def get_latest_data():
         "drivers_detail_kv1": res[8], "drivers_detail_kv2": res[9],
         "thoi_gian_cap_nhat": now.strftime("%H:%M:%S")
     }
-    cache_store.update({"data": data, "expire_time": now + timedelta(seconds=300)})
+    
+    # Lưu vào biến cache toàn cục
+    cache_store["data"] = data
+    cache_store["last_updated"] = now
     return data
 
 @app.get("/", response_class=FileResponse)
@@ -169,7 +178,6 @@ async def stream(request: Request):
         while not await request.is_disconnected():
             latest_data = await get_latest_data()
             yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
-            # Đã gộp và điều chỉnh thời gian chờ phù hợp (ví dụ: 10 giây mỗi lần push data qua SSE)
             await asyncio.sleep(10)
     return EventSourceResponse(gen())
 
