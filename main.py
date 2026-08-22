@@ -71,7 +71,7 @@ async def get_latest_data():
     now = datetime.now(VIETNAM_TZ)
     
     # Nếu cache đã có và thời gian cách lần gọi trước dưới 60 giây thì trả về luôn cache cũ
-    if cache_store["data"] and (now - cache_store["last_updated"]).total_seconds() < 60:
+    if cache_store["data"] and (now - cache_store["last_updated"]).total_seconds() < 300:
         return cache_store["data"]
 
     start = int(datetime.combine(now.date(), time.min).replace(tzinfo=VIETNAM_TZ).timestamp())
