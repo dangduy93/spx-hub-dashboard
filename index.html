@@ -393,7 +393,7 @@
             }
 
             const totalDriversCount = (data.drivers_detail_kv1 ? data.drivers_detail_kv1.length : 0) + 
-                                       (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
+                                     (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
             document.getElementById('group-total-drivers').innerText = totalDriversCount.toLocaleString('vi-VN');
 
             if (data.ten_hub) {
