@@ -37,10 +37,7 @@
         }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden text-slate-700 relative">
-
-    <!-- LỚP PHỦ TRONG SUỐT CHẶN THAO TÁC (KHÔNG HIỂN THỊ BẢNG THÔNG BÁO) -->
-    <div id="loading-overlay" class="fixed inset-0 bg-transparent z-50 hidden"></div>
+<body class="flex h-screen overflow-hidden text-slate-700">
 
     <!-- MOBILE OVERLAY BACKDROP -->
     <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-25 hidden md:hidden transition-opacity"></div>
@@ -253,28 +250,6 @@
     </main>
 
     <script>
-        // Hàm khóa giao diện ngầm (không hiện bảng thông báo)
-        function lockUserInterface() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.classList.remove('hidden');
-            }
-            document.querySelectorAll('button, input, select, textarea').forEach(el => {
-                el.disabled = true;
-            });
-        }
-
-        // Hàm mở khóa giao diện
-        function unlockUserInterface() {
-            const overlay = document.getElementById('loading-overlay');
-            if (overlay) {
-                overlay.classList.add('hidden');
-            }
-            document.querySelectorAll('button, input, select, textarea').forEach(el => {
-                el.disabled = false;
-            });
-        }
-
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -283,9 +258,6 @@
         }
 
         function updateDashboardUI(data, isFromCache = false) {
-            // Khi nhận được dữ liệu mới, tự động mở khóa giao diện
-            unlockUserInterface();
-
             if (data.tong_don_giao_kv1 !== undefined) {
                 document.getElementById('total-orders-kv1').innerText = Number(data.tong_don_giao_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-orders-kv2').innerText = Number(data.tong_don_giao_kv2).toLocaleString('vi-VN');
@@ -311,12 +283,12 @@
                 document.getElementById('forecast-pickup-kv2').innerText = Number(data.du_bao_pickup_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-pickup').innerText = (Number(data.du_bao_pickup_kv1) + Number(data.du_bao_pickup_kv2)).toLocaleString('vi-VN');
             }
-
+            
             // Xử lý danh sách Driver KV1
             if (data.drivers_detail_kv1) {
                 const sortedKv1 = [...data.drivers_detail_kv1].sort((a, b) => b.dang_giao - a.dang_giao);
                 const listKv1 = document.getElementById('driver-list-kv1');
-
+                
                 listKv1.innerHTML = sortedKv1.map((d, index) => {
                     let rankBadgeClass = "bg-slate-100 text-slate-600";
                     if (index === 0) rankBadgeClass = "bg-amber-100 text-amber-700 font-bold";
@@ -340,7 +312,7 @@
                         </div>
                     `;
                 }).join('') || '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
-
+                
                 document.getElementById('count-driver-kv1').innerText = `${data.drivers_detail_kv1.length} driver`;
             }
 
@@ -348,7 +320,7 @@
             if (data.drivers_detail_kv2) {
                 const sortedKv2 = [...data.drivers_detail_kv2].sort((a, b) => b.dang_giao - a.dang_giao);
                 const listKv2 = document.getElementById('driver-list-kv2');
-
+                
                 listKv2.innerHTML = sortedKv2.map((d, index) => {
                     let rankBadgeClass = "bg-slate-100 text-slate-600";
                     if (index === 0) rankBadgeClass = "bg-amber-100 text-amber-700 font-bold";
@@ -372,12 +344,12 @@
                         </div>
                     `;
                 }).join('') || '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
-
+                
                 document.getElementById('count-driver-kv2').innerText = `${data.drivers_detail_kv2.length} driver`;
             }
 
             const totalDriversCount = (data.drivers_detail_kv1 ? data.drivers_detail_kv1.length : 0) + 
-                                      (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
+                                     (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
             document.getElementById('group-total-drivers').innerText = totalDriversCount.toLocaleString('vi-VN');
 
             if (data.ten_hub) {
@@ -388,48 +360,41 @@
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${data.trang_thai_api}`;
             }
 
+            // Nếu là load từ Cache cục bộ, hiển thị trạng thái đang đồng bộ để người dùng phân biệt
             const timeString = isFromCache ? "Đang đồng bộ..." : (data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN'));
             const timeIds = ['update-time-kv1', 'update-time-kv2', 'inventory-time-kv1', 'inventory-time-kv2', 'attempted-time-kv1', 'attempted-time-kv2', 'warehouse-time-kv1', 'warehouse-time-kv2', 'pickup-time-kv1', 'pickup-time-kv2'];
             timeIds.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = timeString; });
 
+            // Lưu lại trữ vào LocalStorage nếu không phải dữ liệu cache
             if (!isFromCache) {
                 localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
             }
         }
 
-        let eventSource = null;
         function connectSSE() {
-            // Khóa giao diện ngầm khi bắt đầu kết nối/lấy dữ liệu
-            lockUserInterface();
-
-            if (eventSource) {
-                eventSource.close();
-            }
-            eventSource = new EventSource('/api/stream');
-
+            const eventSource = new EventSource('/api/stream');
+            
             eventSource.addEventListener('update', function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    updateDashboardUI(data, false);
-                } catch (e) { 
-                    console.error("Lỗi parse dữ liệu SSE:", e); 
-                    unlockUserInterface();
-                }
+                    updateDashboardUI(data, false); // Nhận dữ liệu real-time mới từ server
+                } catch (e) { console.error("Lỗi parse dữ liệu SSE:", e); }
             });
-
-            eventSource.onerror = function() {
+            
+            eventSource.onerror = function(error) {
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
                 eventSource.close();
                 setTimeout(connectSSE, 5000);
             };
         }
-
+        
+        // Khi trang vừa load, nạp ngay dữ liệu cũ từ LocalStorage (nếu có) để hiển thị lập tức
         document.addEventListener('DOMContentLoaded', () => {
             const cachedString = localStorage.getItem('spx_cached_dashboard_data');
             if (cachedString) {
                 try {
                     const cachedData = JSON.parse(cachedString);
-                    updateDashboardUI(cachedData, true);
+                    updateDashboardUI(cachedData, true); // Đánh dấu là hiển thị từ cache tạm thời
                     document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang đồng bộ trực tiếp...`;
                 } catch (e) {
                     console.error("Lỗi đọc cache LocalStorage:", e);
