@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPX Hub Dashboard - Real-time SSE Integration</title>
+    <title>SPX Hub Dashboard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -240,10 +240,10 @@
             <!-- Footer Note -->
             <div class="flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 pt-2 pb-4 gap-2 text-center sm:text-left">
                 <span class="flex items-center gap-1.5" id="api-status-text">
-                    <i class="fa-solid fa-database"></i> Đang kết nối FastAPI SSE Stream...
+                    <i class="fa-solid fa-database"></i> Đã kết nối hệ thống Hub thành công
                 </span>
                 <span class="flex items-center gap-1.5">
-                    <i class="fa-solid fa-rotate animate-spin" style="animation-duration: 4s;"></i> Đồng bộ Real-time tự động
+                    <i class="fa-solid fa-rotate animate-spin" style="animation-duration: 4s;"></i> Tự động cập nhật mỗi 5 phút
                 </span>
             </div>
         </div>
@@ -356,51 +356,50 @@
                 document.getElementById('hub-title').innerText = "Tổng quan - " + data.ten_hub;
                 document.getElementById('hub-location-name').innerText = data.ten_hub;
             }
-            if (data.trang_thai_api && !isFromCache) {
-                document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${data.trang_thai_api}`;
-            }
 
-            // Nếu là load từ Cache cục bộ, hiển thị trạng thái đang đồng bộ để người dùng phân biệt
-            const timeString = isFromCache ? "Đang đồng bộ..." : (data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN'));
+            const timeString = data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN');
             const timeIds = ['update-time-kv1', 'update-time-kv2', 'inventory-time-kv1', 'inventory-time-kv2', 'attempted-time-kv1', 'attempted-time-kv2', 'warehouse-time-kv1', 'warehouse-time-kv2', 'pickup-time-kv1', 'pickup-time-kv2'];
             timeIds.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = timeString; });
 
-            // Lưu lại trữ vào LocalStorage nếu không phải dữ liệu cache
-            if (!isFromCache) {
-                localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
-            }
+            // Lưu cache LocalStorage
+            localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
         }
 
-        function connectSSE() {
-            const eventSource = new EventSource('/api/stream');
-            
-            eventSource.addEventListener('update', function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    updateDashboardUI(data, false); // Nhận dữ liệu real-time mới từ server
-                } catch (e) { console.error("Lỗi parse dữ liệu SSE:", e); }
-            });
-            
-            eventSource.onerror = function(error) {
-                document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
-                eventSource.close();
-                setTimeout(connectSSE, 360000);
-            };
+        // Hàm gọi API định kỳ (Polling) thay thế cho SSE
+        async function fetchDashboardData() {
+            try {
+                let response = await fetch('/api/dashboard');
+                if (response.ok) {
+                    let data = await response.json();
+                    updateDashboardUI(data, false);
+                    document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> Đã đồng bộ dữ liệu thành công`;
+                } else {
+                    throw new Error("Lỗi phản hồi từ server");
+                }
+            } catch (error) {
+                console.error("Lỗi lấy dữ liệu dashboard:", error);
+                document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Đang kết nối lại...`;
+            }
         }
         
-        // Khi trang vừa load, nạp ngay dữ liệu cũ từ LocalStorage (nếu có) để hiển thị lập tức
+        // Khi trang vừa load
         document.addEventListener('DOMContentLoaded', () => {
             const cachedString = localStorage.getItem('spx_cached_dashboard_data');
             if (cachedString) {
                 try {
                     const cachedData = JSON.parse(cachedString);
-                    updateDashboardUI(cachedData, true); // Đánh dấu là hiển thị từ cache tạm thời
-                    document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang đồng bộ trực tiếp...`;
+                    updateDashboardUI(cachedData, true);
+                    document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang cập nhật mới...`;
                 } catch (e) {
                     console.error("Lỗi đọc cache LocalStorage:", e);
                 }
             }
-            connectSSE();
+            
+            // Gọi ngay lập tức một lần khi mở trang
+            fetchDashboardData();
+
+            // Thiết lập gọi định kỳ mỗi 5 phút (300000 ms)
+            setInterval(fetchDashboardData, 300000);
         });
     </script>
 </body>
