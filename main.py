@@ -29,7 +29,7 @@ def load_cookies() -> dict:
                 return json.load(f)
         except Exception as e:
             logger.warning(f"Lỗi đọc file cookie: {e}")
-    
+
     logger.error("Không tìm thấy file cookies.json! Hãy chắc chắn bạn đã upload file này lên GitHub.")
     return {}
 
@@ -64,7 +64,6 @@ async def fetch_api(client, payload):
     return 0, []
 
 async def get_latest_data():
-    # Lấy thời gian hiện tại theo múi giờ Việt Nam (UTC+7)
     now = datetime.now(VIETNAM_TZ)
     if cache_store["data"] and now < cache_store["expire_time"]:
         return cache_store["data"]
@@ -89,11 +88,15 @@ async def get_latest_data():
             while True:
                 p = {"count": 100, "current_station_ids": "4232", "current_station_received_time": time_str, "order_status": "1", "page_no": page, "zone_id": zone}
                 _, orders = await fetch_api(client, p)
-                if not orders: break
+                if not orders: 
+                    break
                 for o in orders:
-                    if o.get("on_hold_times", 0) == 0: un += 1
-                    else: att += 1
-                if len(orders) < 100: break
+                    if o.get("on_hold_times", 0) == 0: 
+                        un += 1
+                    else: 
+                        att += 1
+                if len(orders) < 100: 
+                    break
                 page += 1
             return un, att
 
@@ -103,17 +106,23 @@ async def get_latest_data():
             while True:
                 p = {"count": 100, "current_station_ids": "4232", "current_station_received_time": time_str, "order_status": "2,4,5", "page_no": page, "zone_id": zone}
                 _, orders = await fetch_api(client, p)
-                if not orders: break
+                if not orders: 
+                    break
                 for o in orders:
                     d_id = str(o.get("driver_id", ""))
-                    if not d_id or d_id == "None": continue
+                    if not d_id or d_id == "None": 
+                        continue
                     if d_id not in drivers:
                         drivers[d_id] = {"id": d_id, "ten": o.get("driver_name") or f"DRV {d_id}", "dang_giao": 0, "onhold": 0, "thanh_cong": 0}
                     st = str(o.get("order_status", ""))
-                    if st == "2": drivers[d_id]["dang_giao"] += 1
-                    elif st == "5": drivers[d_id]["onhold"] += 1
-                    elif st == "4": drivers[d_id]["thanh_cong"] += 1
-                if len(orders) < 100: break
+                    if st == "2": 
+                        drivers[d_id]["dang_giao"] += 1
+                    elif st == "5": 
+                        drivers[d_id]["onhold"] += 1
+                    elif st == "4": 
+                        drivers[d_id]["thanh_cong"] += 1
+                if len(orders) < 100: 
+                    break
                 page += 1
             return list(drivers.values())
 
@@ -124,19 +133,19 @@ async def get_latest_data():
             get_forecast_count(FORECAST_STATUS, ZONES_KV1_STR, "4232"), get_forecast_count(FORECAST_STATUS, ZONES_KV2_STR, "4232"),
             get_drivers_detail(ZONES_KV1_STR), get_drivers_detail(ZONES_KV2_STR)
         )
-        
-        data = {
-            "ten_hub": "52-HCM SDD-01 Hub",
-            "tong_don_giao_kv1": res[0], "tong_don_giao_kv2": res[1],
-            "tong_don_ton_kho_chua_attem_kv1": res[2][0], "tong_don_ton_kho_da_attem_kv1": res[2][1],
-            "tong_don_ton_kho_chua_attem_kv2": res[3][0], "tong_don_ton_kho_da_attem_kv2": res[3][1],
-            "du_bao_warehouse_kv1": res[4], "du_bao_warehouse_kv2": res[5],
-            "du_bao_pickup_kv1": res[6], "du_bao_pickup_kv2": res[7],
-            "drivers_detail_kv1": res[8], "drivers_detail_kv2": res[9],
-            "thoi_gian_cap_nhat": now.strftime("%H:%M:%S")
-        }
-        cache_store.update({"data": data, "expire_time": now + timedelta(seconds=300)})
-        return data
+
+    data = {
+        "ten_hub": "52-HCM SDD-01 Hub",
+        "tong_don_giao_kv1": res[0], "tong_don_giao_kv2": res[1],
+        "tong_don_ton_kho_chua_attem_kv1": res[2][0], "tong_don_ton_kho_da_attem_kv1": res[2][1],
+        "tong_don_ton_kho_chua_attem_kv2": res[3][0], "tong_don_ton_kho_da_attem_kv2": res[3][1],
+        "du_bao_warehouse_kv1": res[4], "du_bao_warehouse_kv2": res[5],
+        "du_bao_pickup_kv1": res[6], "du_bao_pickup_kv2": res[7],
+        "drivers_detail_kv1": res[8], "drivers_detail_kv2": res[9],
+        "thoi_gian_cap_nhat": now.strftime("%H:%M:%S")
+    }
+    cache_store.update({"data": data, "expire_time": now + timedelta(seconds=300)})
+    return data
 
 @app.get("/", response_class=FileResponse)
 async def serve_index():
@@ -160,7 +169,8 @@ async def stream(request: Request):
         while not await request.is_disconnected():
             latest_data = await get_latest_data()
             yield {"event": "update", "data": json.dumps(latest_data, ensure_ascii=False)}
-            await asyncio.sleep(360)
+            # Đã gộp và điều chỉnh thời gian chờ phù hợp (ví dụ: 10 giây mỗi lần push data qua SSE)
+            await asyncio.sleep(10)
     return EventSourceResponse(gen())
 
 if __name__ == "__main__":
