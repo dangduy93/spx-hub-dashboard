@@ -140,7 +140,7 @@
         </header>
 
         <div class="p-4 md:p-6 space-y-6">
-            <!-- Top Summary Cards -->
+            <!-- Top Summary Cards (Nhóm 1, 2, 3) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <!-- Nhóm 1 -->
                 <div class="space-y-4">
@@ -148,8 +148,22 @@
                         <i class="fa-solid fa-truck-fast text-blue-600"></i>
                         <span>TỔNG ĐƠN XUẤT KHO: <span id="group-total-orders" class="ml-1 text-blue-600 font-extrabold">...</span></span>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div><div id="total-orders-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv1">--:--:--</span></div></div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div><div id="total-orders-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv2">--:--:--</span></div></div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 1</span></div>
+                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
+                        </div>
+                        <div id="total-orders-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv1">--:--:--</span></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 2</span></div>
+                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
+                        </div>
+                        <div id="total-orders-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv2">--:--:--</span></div>
+                    </div>
                 </div>
 
                 <!-- Nhóm 2 -->
@@ -158,8 +172,22 @@
                         <i class="fa-solid fa-box-archive text-amber-600"></i>
                         <span>TỔNG ĐƠN TỒN KHO CHƯA ATTEM: <span id="group-total-inventory" class="ml-1 text-amber-600 font-extrabold">...</span></span>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div><div id="total-inventory-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv1">--:--:--</span></div></div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div><div id="total-inventory-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv2">--:--:--</span></div></div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 1</span></div>
+                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
+                        </div>
+                        <div id="total-inventory-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv1">--:--:--</span></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 2</span></div>
+                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
+                        </div>
+                        <div id="total-inventory-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv2">--:--:--</span></div>
+                    </div>
                 </div>
 
                 <!-- Nhóm 3 -->
@@ -168,12 +196,26 @@
                         <i class="fa-solid fa-clipboard-check text-violet-600"></i>
                         <span>TỔNG ĐƠN TỒN KHO ĐÃ ATTEM: <span id="group-total-attempted" class="ml-1 text-violet-600 font-extrabold">...</span></span>
                     </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div><div id="total-inventory-attempted-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv1">--:--:--</span></div></div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div><div id="total-inventory-attempted-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv2">--:--:--</span></div></div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 1</span></div>
+                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
+                        </div>
+                        <div id="total-inventory-attempted-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv1">--:--:--</span></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 2</span></div>
+                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
+                        </div>
+                        <div id="total-inventory-attempted-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv2">--:--:--</span></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Nhóm 4 & 5 -->
+            <!-- Nhóm 4 & 5 (Warehouse & Pickup) -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                 <!-- Warehouse -->
                 <div class="space-y-4">
@@ -182,8 +224,16 @@
                         <span>DỰ BÁO NHẬP KHO - WAREHOUSE: <span id="group-total-warehouse" class="ml-1 text-emerald-600 font-extrabold">...</span></span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div><div id="forecast-warehouse-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv1">--:--:--</span></div></div>
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div><div id="forecast-warehouse-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv2">--:--:--</span></div></div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div>
+                            <div id="forecast-warehouse-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv1">--:--:--</span></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div>
+                            <div id="forecast-warehouse-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv2">--:--:--</span></div>
+                        </div>
                     </div>
                 </div>
 
@@ -194,8 +244,16 @@
                         <span>DỰ BÁO NHẬP KHO - PICKUP: <span id="group-total-pickup" class="ml-1 text-indigo-600 font-extrabold">...</span></span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div><div id="forecast-pickup-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv1">--:--:--</span></div></div>
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div><div id="forecast-pickup-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div><div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv2">--:--:--</span></div></div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div>
+                            <div id="forecast-pickup-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv1">--:--:--</span></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div>
+                            <div id="forecast-pickup-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
+                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv2">--:--:--</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -257,99 +315,85 @@
             overlay.classList.toggle('hidden');
         }
 
+        function renderDriverList(drivers, containerId, countId, iconColorClass) {
+            const container = document.getElementById(containerId);
+            if (!drivers || drivers.length === 0) {
+                container.innerHTML = '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
+                document.getElementById(countId).innerText = '0 driver';
+                return;
+            }
+
+            const sortedDrivers = [...drivers].sort((a, b) => b.dang_giao - a.dang_giao);
+
+            container.innerHTML = sortedDrivers.map((d, index) => {
+                let rankBadgeClass = "bg-slate-100 text-slate-600";
+                if (index === 0) rankBadgeClass = "bg-amber-100 text-amber-700 font-bold";
+                else if (index === 1) rankBadgeClass = "bg-slate-200 text-slate-700 font-bold";
+                else if (index === 2) rankBadgeClass = "bg-orange-100 text-orange-700 font-bold";
+
+                return `
+                    <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1.5">
+                        <div class="flex justify-between font-semibold text-slate-800 items-center">
+                            <span class="flex items-center gap-1.5">
+                                <span class="w-5 h-5 flex items-center justify-center text-[10px] rounded-full ${rankBadgeClass}">#${index + 1}</span>
+                                <span><i class="fa-solid fa-user-shield ${iconColorClass} mr-1"></i> Tên: ${d.ten}</span>
+                            </span>
+                            <span class="text-slate-500 font-mono text-[11px]">ID: ${d.id}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60">
+                            <div>Đang giao: <strong class="text-blue-600">${d.dang_giao}</strong></div>
+                            <div>Onhold: <strong class="text-amber-600">${d.onhold}</strong></div>
+                            <div>Thành công: <strong class="text-emerald-600">${d.thanh_cong}</strong></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById(countId).innerText = `${drivers.length} driver`;
+        }
+
         function updateDashboardUI(data, isFromCache = false) {
+            // Tổng đơn xuất kho
             if (data.tong_don_giao_kv1 !== undefined) {
                 document.getElementById('total-orders-kv1').innerText = Number(data.tong_don_giao_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-orders-kv2').innerText = Number(data.tong_don_giao_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-orders').innerText = (Number(data.tong_don_giao_kv1) + Number(data.tong_don_giao_kv2)).toLocaleString('vi-VN');
             }
+            // Tồn kho chưa attem
             if (data.tong_don_ton_kho_chua_attem_kv1 !== undefined) {
                 document.getElementById('total-inventory-kv1').innerText = Number(data.tong_don_ton_kho_chua_attem_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-inventory-kv2').innerText = Number(data.tong_don_ton_kho_chua_attem_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-inventory').innerText = (Number(data.tong_don_ton_kho_chua_attem_kv1) + Number(data.tong_don_ton_kho_chua_attem_kv2)).toLocaleString('vi-VN');
             }
+            // Tồn kho đã attem
             if (data.tong_don_ton_kho_da_attem_kv1 !== undefined) {
                 document.getElementById('total-inventory-attempted-kv1').innerText = Number(data.tong_don_ton_kho_da_attem_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-inventory-attempted-kv2').innerText = Number(data.tong_don_ton_kho_da_attem_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-attempted').innerText = (Number(data.tong_don_ton_kho_da_attem_kv1) + Number(data.tong_don_ton_kho_da_attem_kv2)).toLocaleString('vi-VN');
             }
+            // Dự báo Warehouse
             if (data.du_bao_warehouse_kv1 !== undefined) {
                 document.getElementById('forecast-warehouse-kv1').innerText = Number(data.du_bao_warehouse_kv1).toLocaleString('vi-VN');
                 document.getElementById('forecast-warehouse-kv2').innerText = Number(data.du_bao_warehouse_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-warehouse').innerText = (Number(data.du_bao_warehouse_kv1) + Number(data.du_bao_warehouse_kv2)).toLocaleString('vi-VN');
             }
+            // Dự báo Pickup
             if (data.du_bao_pickup_kv1 !== undefined) {
                 document.getElementById('forecast-pickup-kv1').innerText = Number(data.du_bao_pickup_kv1).toLocaleString('vi-VN');
                 document.getElementById('forecast-pickup-kv2').innerText = Number(data.du_bao_pickup_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-pickup').innerText = (Number(data.du_bao_pickup_kv1) + Number(data.du_bao_pickup_kv2)).toLocaleString('vi-VN');
             }
-            
-            // Xử lý danh sách Driver KV1
+
+            // Driver KV1 & KV2
             if (data.drivers_detail_kv1) {
-                const sortedKv1 = [...data.drivers_detail_kv1].sort((a, b) => b.dang_giao - a.dang_giao);
-                const listKv1 = document.getElementById('driver-list-kv1');
-                
-                listKv1.innerHTML = sortedKv1.map((d, index) => {
-                    let rankBadgeClass = "bg-slate-100 text-slate-600";
-                    if (index === 0) rankBadgeClass = "bg-amber-100 text-amber-700 font-bold";
-                    else if (index === 1) rankBadgeClass = "bg-slate-200 text-slate-700 font-bold";
-                    else if (index === 2) rankBadgeClass = "bg-orange-100 text-orange-700 font-bold";
-
-                    return `
-                        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1.5">
-                            <div class="flex justify-between font-semibold text-slate-800 items-center">
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 flex items-center justify-center text-[10px] rounded-full ${rankBadgeClass}">#${index + 1}</span>
-                                    <span><i class="fa-solid fa-user-shield text-blue-500 mr-1"></i> Tên: ${d.ten}</span>
-                                </span>
-                                <span class="text-slate-500 font-mono text-[11px]">ID: ${d.id}</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60">
-                                <div>Đơn đang giao: <strong class="text-blue-600">${d.dang_giao}</strong></div>
-                                <div>Đơn Onhold: <strong class="text-amber-600">${d.onhold}</strong></div>
-                                <div>Thành công: <strong class="text-emerald-600">${d.thanh_cong}</strong></div>
-                            </div>
-                        </div>
-                    `;
-                }).join('') || '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
-                
-                document.getElementById('count-driver-kv1').innerText = `${data.drivers_detail_kv1.length} driver`;
+                renderDriverList(data.drivers_detail_kv1, 'driver-list-kv1', 'count-driver-kv1', 'text-blue-500');
             }
-
-            // Xử lý danh sách Driver KV2
             if (data.drivers_detail_kv2) {
-                const sortedKv2 = [...data.drivers_detail_kv2].sort((a, b) => b.dang_giao - a.dang_giao);
-                const listKv2 = document.getElementById('driver-list-kv2');
-                
-                listKv2.innerHTML = sortedKv2.map((d, index) => {
-                    let rankBadgeClass = "bg-slate-100 text-slate-600";
-                    if (index === 0) rankBadgeClass = "bg-amber-100 text-amber-700 font-bold";
-                    else if (index === 1) rankBadgeClass = "bg-slate-200 text-slate-700 font-bold";
-                    else if (index === 2) rankBadgeClass = "bg-orange-100 text-orange-700 font-bold";
-
-                    return `
-                        <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1.5">
-                            <div class="flex justify-between font-semibold text-slate-800 items-center">
-                                <span class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 flex items-center justify-center text-[10px] rounded-full ${rankBadgeClass}">#${index + 1}</span>
-                                    <span><i class="fa-solid fa-user-shield text-emerald-500 mr-1"></i> Tên: ${d.ten}</span>
-                                </span>
-                                <span class="text-slate-500 font-mono text-[11px]">ID: ${d.id}</span>
-                            </div>
-                            <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60">
-                                <div>Đơn đang giao: <strong class="text-blue-600">${d.dang_giao}</strong></div>
-                                <div>Đơn Onhold: <strong class="text-amber-600">${d.onhold}</strong></div>
-                                <div>Thành công: <strong class="text-emerald-600">${d.thanh_cong}</strong></div>
-                            </div>
-                        </div>
-                    `;
-                }).join('') || '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
-                
-                document.getElementById('count-driver-kv2').innerText = `${data.drivers_detail_kv2.length} driver`;
+                renderDriverList(data.drivers_detail_kv2, 'driver-list-kv2', 'count-driver-kv2', 'text-emerald-500');
             }
 
             const totalDriversCount = (data.drivers_detail_kv1 ? data.drivers_detail_kv1.length : 0) + 
-                                     (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
+                                       (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
             document.getElementById('group-total-drivers').innerText = totalDriversCount.toLocaleString('vi-VN');
 
             if (data.ten_hub) {
@@ -360,12 +404,13 @@
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${data.trang_thai_api}`;
             }
 
-            // Nếu là load từ Cache cục bộ, hiển thị trạng thái đang đồng bộ để người dùng phân biệt
             const timeString = isFromCache ? "Đang đồng bộ..." : (data.thoi_gian_cap_nhat || new Date().toLocaleTimeString('vi-VN'));
             const timeIds = ['update-time-kv1', 'update-time-kv2', 'inventory-time-kv1', 'inventory-time-kv2', 'attempted-time-kv1', 'attempted-time-kv2', 'warehouse-time-kv1', 'warehouse-time-kv2', 'pickup-time-kv1', 'pickup-time-kv2'];
-            timeIds.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = timeString; });
+            timeIds.forEach(id => { 
+                const el = document.getElementById(id);
+                if (el) el.innerText = timeString; 
+            });
 
-            // Lưu lại trữ vào LocalStorage nếu không phải dữ liệu cache
             if (!isFromCache) {
                 localStorage.setItem('spx_cached_dashboard_data', JSON.stringify(data));
             }
@@ -373,28 +418,29 @@
 
         function connectSSE() {
             const eventSource = new EventSource('/api/stream');
-            
+
             eventSource.addEventListener('update', function(event) {
                 try {
                     const data = JSON.parse(event.data);
-                    updateDashboardUI(data, false); // Nhận dữ liệu real-time mới từ server
-                } catch (e) { console.error("Lỗi parse dữ liệu SSE:", e); }
+                    updateDashboardUI(data, false);
+                } catch (e) { 
+                    console.error("Lỗi parse dữ liệu SSE:", e); 
+                }
             });
-            
-            eventSource.onerror = function(error) {
+
+            eventSource.onerror = function() {
                 document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
                 eventSource.close();
                 setTimeout(connectSSE, 5000);
             };
         }
-        
-        // Khi trang vừa load, nạp ngay dữ liệu cũ từ LocalStorage (nếu có) để hiển thị lập tức
+
         document.addEventListener('DOMContentLoaded', () => {
             const cachedString = localStorage.getItem('spx_cached_dashboard_data');
             if (cachedString) {
                 try {
                     const cachedData = JSON.parse(cachedString);
-                    updateDashboardUI(cachedData, true); // Đánh dấu là hiển thị từ cache tạm thời
+                    updateDashboardUI(cachedData, true);
                     document.getElementById('api-status-text').innerHTML = `<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang đồng bộ trực tiếp...`;
                 } catch (e) {
                     console.error("Lỗi đọc cache LocalStorage:", e);
