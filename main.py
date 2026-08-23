@@ -311,7 +311,7 @@ async def stream(request: Request):
           "data": json.dumps(latest_data, ensure_ascii=False),
       }
       await asyncio.sleep(5)
-      await asyncio.sleep(360)
+      await asyncio.sleep(60)
 
   return EventSourceResponse(gen())
 
