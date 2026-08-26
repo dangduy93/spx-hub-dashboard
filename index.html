@@ -63,13 +63,13 @@
 
             <!-- Navigation Menu -->
             <nav class="px-3 py-4 space-y-1 text-sm font-medium overflow-y-auto max-h-[calc(100vh-140px)]">
-                <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold">
+                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-chart-pie text-base"></i>
                         <span>Dashboard</span>
                     </div>
                 </a>
-                <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                <a href="#" onclick="switchTab('shiper')" id="nav-shiper" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-truck text-base"></i>
                         <span>Shiper</span>
@@ -139,7 +139,8 @@
             </div>
         </header>
 
-        <div class="p-4 md:p-6 space-y-6">
+        <!-- TAB CONTENT: DASHBOARD -->
+        <div id="content-dashboard" class="p-4 md:p-6 space-y-6">
             <!-- Top Summary Cards (Nhóm 1, 2, 3) -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <!-- Nhóm 1 -->
@@ -305,9 +306,157 @@
                 </span>
             </div>
         </div>
+
+        <!-- TAB CONTENT: SHIPER (Hiệu Suất Driver) -->
+        <div id="content-shiper" class="p-4 md:p-6 space-y-6 hidden">
+            <!-- Thanh chuyển đổi tiêu chí (Tab chuyển đổi) -->
+            <div class="mb-4 flex flex-wrap gap-2">
+                <button id="tabDelivery" class="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center">
+                    <i class="fas fa-shipping-fast mr-2"></i> Top Giao Hàng
+                </button>
+                <button id="tabPickup" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center">
+                    <i class="fas fa-box-open mr-2"></i> Top Lấy Hàng
+                </button>
+            </div>
+
+            <!-- Tiêu đề & Tìm kiếm -->
+            <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-800 uppercase" id="tableTitle">TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT</h2>
+                    <p class="text-sm text-gray-500" id="tableSubtitle">Danh sách được sắp xếp từ cao xuống thấp.</p>
+                </div>
+
+                <!-- Ô tìm kiếm -->
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="Tìm kiếm tài xế, ID, Khu vực..."
+                           class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
+            </div>
+
+            <!-- Bảng dữ liệu -->
+            <div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Khu Vực</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rider</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Số Ngày Làm</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider" id="colHeaderMetric">Đơn Giao</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider" id="colHeaderSuccess">Thành Công</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Tồn/Hold</th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Tỷ Lệ Thành Công</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="riderTableBody">
+                            {% for rider in riders %}
+                            <tr class="hover:bg-gray-50 transition-colors rider-row {% if loop.index > 5 %}hidden-row{% endif %}"
+                                {% if loop.index > 5 %}style="display: none;"{% endif %}
+                                data-name="{{ rider.name|lower }}"
+                                data-id="{{ rider.id }}"
+                                data-khuvuc="{{ rider.khu_vuc|lower }}"
+                                data-raw-rate="{{ rider.raw_rate }}"
+                                data-raw-pickup-rate="{{ rider.raw_pickup_rate }}">
+                                
+                                <!-- Khu Vực -->
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        {% if rider.khu_vuc == 'Khu vực 1' %} bg-purple-100 text-purple-800 {% else %} bg-indigo-100 text-indigo-800 {% endif %}">
+                                        {{ rider.khu_vuc }}
+                                    </span>
+                                </td>
+                                
+                                <!-- Rider Info -->
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ rider.name }}</div>
+                                    <div class="text-xs text-gray-500">ID: {{ rider.id }}</div>
+                                </td>
+                                
+                                <!-- Số Ngày Làm -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
+                                    {{ rider.days }}
+                                </td>
+                                
+                                <!-- Đơn Giao / Đơn Lấy -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 font-medium cell-assigned"
+                                    data-delivery="{{ rider.assigned }}" data-pickup="{{ rider.pickup_assigned }}">
+                                    {{ rider.assigned }}
+                                </td>
+                                
+                                <!-- Thành Công -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-green-600 font-semibold cell-success"
+                                    data-delivery="{{ rider.success }}" data-pickup="{{ rider.pickup_success }}">
+                                    {{ rider.success }}
+                                </td>
+                                
+                                <!-- Tồn/Hold -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-orange-500 font-medium cell-onhold"
+                                    data-delivery="{{ rider.onhold }}" data-pickup="{{ rider.pickup_onhold }}">
+                                    {{ rider.onhold }}
+                                </td>
+                                
+                                <!-- Tỷ Lệ Thành Công -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 cell-rate"
+                                          data-delivery="{{ rider.rate }}" data-pickup="{{ rider.pickup_rate }}"
+                                          data-raw-delivery="{{ rider.raw_rate }}" data-raw-pickup="{{ rider.raw_pickup_rate }}">
+                                        {{ rider.rate }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">
+                                    <i class="fas fa-box-open text-3xl mb-2 text-gray-400 block"></i>
+                                    Không tìm thấy dữ liệu phù hợp.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Dòng thông báo tìm kiếm không có kết quả -->
+                            <tr id="noResultRow" style="display: none;">
+                                <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">
+                                    <i class="fas fa-search text-3xl mb-2 text-gray-400 block"></i>
+                                    Không tìm thấy driver nào phù hợp với từ khóa tìm kiếm.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Nút Bấm Bật/Tắt Toàn bộ -->
+            <div class="mt-6 flex justify-center">
+                <button id="toggleBtn" class="px-6 py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center justify-center">
+                    <i class="fas fa-list mr-2" id="toggleIcon"></i> 
+                    <span id="toggleText">Xem toàn bộ driver</span>
+                </button>
+            </div>
+        </div>
     </main>
 
     <script>
+        // Chuyển đổi giữa Dashboard và các Tab menu khác
+        function switchTab(tabName) {
+            const navDashboard = document.getElementById('nav-dashboard');
+            const navShiper = document.getElementById('nav-shiper');
+            const contentDashboard = document.getElementById('content-dashboard');
+            const contentShiper = document.getElementById('content-shiper');
+
+            if (tabName === 'dashboard') {
+                navDashboard.className = "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
+                navShiper.className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
+                contentDashboard.classList.remove('hidden');
+                contentShiper.classList.add('hidden');
+            } else if (tabName === 'shiper') {
+                navShiper.className = "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
+                navDashboard.className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
+                contentShiper.classList.remove('hidden');
+                contentDashboard.classList.add('hidden');
+            }
+        }
+
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -353,38 +502,32 @@
         }
 
         function updateDashboardUI(data, isFromCache = false) {
-            // Tổng đơn xuất kho
             if (data.tong_don_giao_kv1 !== undefined) {
                 document.getElementById('total-orders-kv1').innerText = Number(data.tong_don_giao_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-orders-kv2').innerText = Number(data.tong_don_giao_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-orders').innerText = (Number(data.tong_don_giao_kv1) + Number(data.tong_don_giao_kv2)).toLocaleString('vi-VN');
             }
-            // Tồn kho chưa attem
             if (data.tong_don_ton_kho_chua_attem_kv1 !== undefined) {
                 document.getElementById('total-inventory-kv1').innerText = Number(data.tong_don_ton_kho_chua_attem_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-inventory-kv2').innerText = Number(data.tong_don_ton_kho_chua_attem_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-inventory').innerText = (Number(data.tong_don_ton_kho_chua_attem_kv1) + Number(data.tong_don_ton_kho_chua_attem_kv2)).toLocaleString('vi-VN');
             }
-            // Tồn kho đã attem
             if (data.tong_don_ton_kho_da_attem_kv1 !== undefined) {
                 document.getElementById('total-inventory-attempted-kv1').innerText = Number(data.tong_don_ton_kho_da_attem_kv1).toLocaleString('vi-VN');
                 document.getElementById('total-inventory-attempted-kv2').innerText = Number(data.tong_don_ton_kho_da_attem_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-attempted').innerText = (Number(data.tong_don_ton_kho_da_attem_kv1) + Number(data.tong_don_ton_kho_da_attem_kv2)).toLocaleString('vi-VN');
             }
-            // Dự báo Warehouse
             if (data.du_bao_warehouse_kv1 !== undefined) {
                 document.getElementById('forecast-warehouse-kv1').innerText = Number(data.du_bao_warehouse_kv1).toLocaleString('vi-VN');
                 document.getElementById('forecast-warehouse-kv2').innerText = Number(data.du_bao_warehouse_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-warehouse').innerText = (Number(data.du_bao_warehouse_kv1) + Number(data.du_bao_warehouse_kv2)).toLocaleString('vi-VN');
             }
-            // Dự báo Pickup
             if (data.du_bao_pickup_kv1 !== undefined) {
                 document.getElementById('forecast-pickup-kv1').innerText = Number(data.du_bao_pickup_kv1).toLocaleString('vi-VN');
                 document.getElementById('forecast-pickup-kv2').innerText = Number(data.du_bao_pickup_kv2).toLocaleString('vi-VN');
                 document.getElementById('group-total-pickup').innerText = (Number(data.du_bao_pickup_kv1) + Number(data.du_bao_pickup_kv2)).toLocaleString('vi-VN');
             }
 
-            // Driver KV1 & KV2
             if (data.drivers_detail_kv1) {
                 renderDriverList(data.drivers_detail_kv1, 'driver-list-kv1', 'count-driver-kv1', 'text-blue-500');
             }
@@ -433,6 +576,161 @@
                 eventSource.close();
                 setTimeout(connectSSE, 5000);
             };
+        }
+
+        // Xử lý logic tab Shiper (Hiệu Suất Driver)
+        const toggleBtn = document.getElementById('toggleBtn');
+        const toggleText = document.getElementById('toggleText');
+        const toggleIcon = document.getElementById('toggleIcon');
+        const tableTitle = document.getElementById('tableTitle');
+        const tableSubtitle = document.getElementById('tableSubtitle');
+        const searchInput = document.getElementById('searchInput');
+        const noResultRow = document.getElementById('noResultRow');
+
+        const tabDelivery = document.getElementById('tabDelivery');
+        const tabPickup = document.getElementById('tabPickup');
+        const colHeaderMetric = document.getElementById('colHeaderMetric');
+        const colHeaderSuccess = document.getElementById('colHeaderSuccess');
+        const tbody = document.getElementById('riderTableBody');
+
+        let isShowingAll = false;
+        let currentTab = 'delivery';
+
+        function sortTableRows() {
+            const rowsArray = Array.from(document.querySelectorAll('.rider-row'));
+            rowsArray.sort((a, b) => {
+                let rateA, rateB;
+                if (currentTab === 'delivery') {
+                    rateA = parseFloat(a.getAttribute('data-raw-rate')) || 0;
+                    rateB = parseFloat(b.getAttribute('data-raw-rate')) || 0;
+                } else {
+                    rateA = parseFloat(a.getAttribute('data-raw-pickup-rate')) || 0;
+                    rateB = parseFloat(b.getAttribute('data-raw-pickup-rate')) || 0;
+                }
+                return rateB - rateA;
+            });
+
+            rowsArray.forEach(row => tbody.insertBefore(row, noResultRow));
+            updateRowVisibility();
+        }
+
+        function updateRowVisibility() {
+            const rowsArray = Array.from(document.querySelectorAll('.rider-row'));
+            const term = searchInput.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            rowsArray.forEach((row, index) => {
+                const text = row.innerText.toLowerCase();
+                const matchesSearch = text.includes(term);
+
+                if (term !== '') {
+                    if (matchesSearch) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                } else {
+                    if (isShowingAll || index < 5) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                }
+            });
+
+            if (noResultRow) {
+                noResultRow.style.display = (visibleCount === 0 && term !== '') ? '' : 'none';
+            }
+        }
+
+        function updateTableDataView() {
+            const rowsArray = document.querySelectorAll('.rider-row');
+            rowsArray.forEach(row => {
+                const cellAssigned = row.querySelector('.cell-assigned');
+                const cellSuccess = row.querySelector('.cell-success');
+                const cellOnhold = row.querySelector('.cell-onhold');
+                const cellRate = row.querySelector('.cell-rate');
+
+                if (currentTab === 'delivery') {
+                    cellAssigned.innerText = cellAssigned.getAttribute('data-delivery');
+                    cellSuccess.innerText = cellSuccess.getAttribute('data-delivery');
+                    cellOnhold.innerText = cellOnhold.getAttribute('data-delivery');
+                    cellRate.innerText = cellRate.getAttribute('data-delivery');
+                } else {
+                    cellAssigned.innerText = cellAssigned.getAttribute('data-pickup');
+                    cellSuccess.innerText = cellSuccess.getAttribute('data-pickup');
+                    cellOnhold.innerText = cellOnhold.getAttribute('data-pickup');
+                    cellRate.innerText = cellRate.getAttribute('data-pickup');
+                }
+            });
+        }
+
+        tabDelivery.addEventListener('click', function() {
+            currentTab = 'delivery';
+            tabDelivery.className = "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
+            tabPickup.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
+            colHeaderMetric.innerText = "Đơn Giao";
+            colHeaderSuccess.innerText = "Thành Công";
+
+            updateTableDataView();
+            sortTableRows();
+            updateTitleAndSubtitle();
+        });
+
+        tabPickup.addEventListener('click', function() {
+            currentTab = 'pickup';
+            tabPickup.className = "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
+            tabDelivery.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
+            colHeaderMetric.innerText = "Đơn Lấy";
+            colHeaderSuccess.innerText = "Lấy Thành Công";
+
+            updateTableDataView();
+            sortTableRows();
+            updateTitleAndSubtitle();
+        });
+
+        function updateTitleAndSubtitle() {
+            if (isShowingAll) {
+                if (currentTab === 'delivery') {
+                    tableTitle.innerText = 'DANH SÁCH TOÀN BỘ DRIVER - GIAO HÀNG';
+                } else {
+                    tableTitle.innerText = 'DANH SÁCH TOÀN BỘ DRIVER - LẤY HÀNG';
+                }
+            } else {
+                if (currentTab === 'delivery') {
+                    tableTitle.innerText = 'TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT';
+                } else {
+                    tableTitle.innerText = 'TOP 5 DRIVER CÓ TỶ LỆ LẤY THÀNH CÔNG CAO NHẤT';
+                }
+            }
+        }
+
+        toggleBtn.addEventListener('click', function() {
+            isShowingAll = !isShowingAll;
+            searchInput.value = '';
+            updateRowVisibility();
+
+            if (isShowingAll) {
+                toggleText.innerText = 'Thu gọn Top 5';
+                toggleIcon.className = 'fas fa-chevron-up mr-2';
+                updateTitleAndSubtitle();
+                tableSubtitle.innerText = 'Hiển thị toàn bộ danh sách tài xế trong hệ thống.';
+                toggleBtn.classList.replace('bg-gray-800', 'bg-gray-700');
+            } else {
+                toggleText.innerText = 'Xem toàn bộ driver';
+                toggleIcon.className = 'fas fa-list mr-2';
+                updateTitleAndSubtitle();
+                tableSubtitle.innerText = 'Danh sách được sắp xếp từ cao xuống thấp.';
+                toggleBtn.classList.replace('bg-gray-700', 'bg-gray-800');
+            }
+        });
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                updateRowVisibility();
+            });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
