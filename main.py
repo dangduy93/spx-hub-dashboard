@@ -467,7 +467,7 @@ async def dashboard():
 
 @app.get("/api/performance")
 async def performance_api():
-  """Endpoint trả về báo cáo hiệu suất tài xế tích hợp từ Flask code"""
+  """Endpoint trả về báo cáo hiệu suất tài xế"""
   riders = await get_drivers_performance_data()
   return {"riders": riders}
 
