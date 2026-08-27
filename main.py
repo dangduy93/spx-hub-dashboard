@@ -3,9 +3,9 @@ from datetime import datetime, time, timedelta, timezone
 import json
 import logging
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse
 import httpx
 from sse_starlette.sse import EventSourceResponse
 
@@ -15,7 +15,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger("SPX-Hub")
 
-COOKIE_FILE = "cookies.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+COOKIE_FILE = os.path.join(BASE_DIR, "cookies.json")
+INDEX_FILE = os.path.join(BASE_DIR, "index.html")
 SPX_API_URL = "https://spx.shopee.vn/api/fleet_order/order/tracking_list/search"
 DELIVERY_API_URL = (
     "https://spx.shopee.vn/api/driverservice/admin/performance/delivery/report/list"
@@ -65,6 +67,7 @@ ZONES_KV2_STR = (
     "Z2.02.TB.01,Z2.02.TĐ.01,Z2.02.TĐ.02,Z2.02.LX.01,Z2.02.TB.02,Z2.02.TB.03,Z2.02.TĐ.05,Z2.02.HB.02,Z2.02.CK.02,Z2.02.CK.03,Z2.02.ĐN.01,Z2.02.ĐN.02,Z2.02.ĐN.03,Z2.02.PN.02,Z2.02.CK.04,Z2.02.CK.01,Z2.02.CK.05,Z2.02.PN.04,Z2.02.PN.03,Z2.02.PN.05,Z2.01.TH.03,Z2.01.BH.01,Z2.01.TH.02,Z2.01.TH.01,Z2.01.TSN.03,Z2.01.BH.02,Z2.01.TB.02,Z2.01.TSN.02,Z2.01.TSH.03,Z2.01.TSH.01,Z2.01.TSH.02,Z2.01.TSN.01,Z2.01.BH.03,Z2.01.TB.01,Z2.01.TB.03,Z2.02.PN.01,Z2.02.LX.03,Z2.02.LX.02,Z2.02.HB.01.A,Z2.02.HB.01.C,Z2.02.HB.01.B,Z2.02.HB.01.D,Z2.02.HB.01.E,Z2.02.HB.03.A,Z2.02.HB.03.B"
 )
 
+# --- DANH SÁCH ID TÀI XẾ CỐ ĐỊNH (KV1 & KV2) ---
 KV1_DRIVER_IDS = set(
     x.strip()
     for x in """
@@ -117,6 +120,12 @@ cache_store = {
     "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ),
 }
 
+performance_cache = {
+    "data": None,
+    "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ),
+}
+PERFORMANCE_CACHE_SECONDS = int(os.getenv("PERFORMANCE_CACHE_SECONDS", "300"))
+
 
 async def fetch_api(client, payload):
   try:
@@ -133,11 +142,14 @@ async def fetch_api(client, payload):
       return data.get("total_count", data.get("total", 0)), data.get(
           "list", []
       ) or data.get("orders", [])
+    else:
+      logger.warning(f"SPX API trả về mã lỗi: {response.status_code}")
   except Exception as e:
     logger.error(f"API Error: {e}")
   return 0, []
 
 
+# --- CÁC HÀM XỬ LÝ REPORT HIỆU SUẤT TÀI XẾ ---
 def get_field(metrics_dict, keys, default=0):
   for key in keys:
     if key in metrics_dict and metrics_dict[key] is not None:
@@ -182,7 +194,13 @@ async def fetch_report_data(client, api_url, function_type):
           timeout=15.0,
       )
       if response.status_code != 200:
-        break
+        logger.warning(
+            "SPX Report %s trả về HTTP %s: %s",
+            api_url,
+            response.status_code,
+            response.text[:500],
+        )
+        raise RuntimeError(f"SPX Report HTTP {response.status_code}")
       result = response.json()
       data_list = result.get("data", {}).get("list", [])
       if not data_list:
@@ -192,108 +210,105 @@ async def fetch_report_data(client, api_url, function_type):
         break
       pageno += 1
     except Exception as e:
-      logger.error(f"Lỗi khi gọi API Report: {e}")
+      logger.error(f"Lỗi khi gọi API Report {api_url} trang {pageno}: {e}")
       break
   return all_data_list
 
 
-async def get_drivers_performance_data():
+async def get_drivers_performance_data(force_refresh: bool = False):
+  """Lấy report hiệu suất giao/lấy và cache để Render không gọi SPX liên tục."""
+  now = datetime.now(VIETNAM_TZ)
+  if (
+      not force_refresh
+      and performance_cache["data"] is not None
+      and now < performance_cache["expire_time"]
+  ):
+    return performance_cache["data"]
+
   async with httpx.AsyncClient() as client:
     delivery_raw_list, pickup_raw_list = await asyncio.gather(
         fetch_report_data(client, DELIVERY_API_URL, 0),
         fetch_report_data(client, PICKUP_API_URL, 2),
     )
 
+  logger.info(
+      "Performance raw data: delivery=%s, pickup=%s",
+      len(delivery_raw_list),
+      len(pickup_raw_list),
+  )
+
   riders_map = {}
 
   for item in delivery_raw_list:
-    rider_id = str(item.get("driver_id", ""))
+    rider_id = str(item.get("driver_id", "")).strip()
     khu_vuc = (
         "Khu vực 1"
         if rider_id in KV1_DRIVER_IDS
         else ("Khu vực 2" if rider_id in KV2_DRIVER_IDS else None)
     )
+    if not khu_vuc:
+      continue
 
-    if khu_vuc:
-      metrics = item.get("period_metric", {})
-      assigned = get_field(
-          metrics,
-          [
-              "MONTHLY_NUMBER_OF_PARCEL_ASSIGNED_V2",
-              "MONTHLY_VN_NUMBER_OF_PARCEL_ASSIGNED",
-          ],
-          0,
-      )
-      delivered = get_field(
-          metrics,
-          [
-              "MONTHLY_NUMBER_OF_PARCEL_DELIVERED",
-              "MONTHLY_VN_NUMBER_OF_PARCEL_DELIVERED",
-          ],
-          0,
-      )
-      onhold = get_field(
-          metrics,
-          [
-              "MONTHLY_NUMBER_OF_PARCEL_ON_HOLD",
-              "MONTHLY_VN_NUMBER_OF_PARCEL_ON_HOLD",
-          ],
-          0,
-      )
-      success_rate = get_field(
-          metrics,
-          [
-              "MONTHLY_VN_DELIVERY_SUCCESS_RATE",
-              "MONTHLY_DELIVERY_SUCCESS_RATE_V2",
-          ],
-          0,
-      )
-      raw_rate, rate_str = parse_rate(success_rate)
-      working_days = get_field(
-          metrics, ["MONTHLY_TOTAL_NUMBER_OF_DAY_WORKING"], 0
-      )
+    metrics = item.get("period_metric") or {}
+    assigned = get_field(metrics, [
+        "MONTHLY_NUMBER_OF_PARCEL_ASSIGNED_V2",
+        "MONTHLY_VN_NUMBER_OF_PARCEL_ASSIGNED",
+    ], 0)
+    delivered = get_field(metrics, [
+        "MONTHLY_NUMBER_OF_PARCEL_DELIVERED",
+        "MONTHLY_VN_NUMBER_OF_PARCEL_DELIVERED",
+    ], 0)
+    onhold = get_field(metrics, [
+        "MONTHLY_NUMBER_OF_PARCEL_ON_HOLD",
+        "MONTHLY_VN_NUMBER_OF_PARCEL_ON_HOLD",
+    ], 0)
+    success_rate = get_field(metrics, [
+        "MONTHLY_VN_DELIVERY_SUCCESS_RATE",
+        "MONTHLY_DELIVERY_SUCCESS_RATE_V2",
+    ], 0)
+    raw_rate, rate_str = parse_rate(success_rate)
+    working_days = get_field(metrics, ["MONTHLY_TOTAL_NUMBER_OF_DAY_WORKING"], 0)
 
-      riders_map[rider_id] = {
-          "name": item.get("driver_name", "N/A"),
-          "id": rider_id,
-          "khu_vuc": khu_vuc,
-          "days": working_days,
-          "assigned": assigned,
-          "success": delivered,
-          "onhold": onhold,
-          "rate": rate_str,
-          "raw_rate": raw_rate,
-          "pickup_assigned": 0,
-          "pickup_success": 0,
-          "pickup_onhold": 0,
-          "pickup_rate": "0.0%",
-          "raw_pickup_rate": 0.0,
-      }
+    riders_map[rider_id] = {
+        "avatar": item.get("avatar_url", ""),
+        "name": item.get("driver_name", "N/A"),
+        "id": rider_id,
+        "khu_vuc": khu_vuc,
+        "days": working_days,
+        "assigned": assigned,
+        "success": delivered,
+        "onhold": onhold,
+        "rate": rate_str,
+        "raw_rate": raw_rate,
+        "pickup_assigned": 0,
+        "pickup_success": 0,
+        "pickup_onhold": 0,
+        "pickup_rate": "0.0%",
+        "raw_pickup_rate": 0.0,
+    }
 
   for item in pickup_raw_list:
-    rider_id = str(item.get("driver_id", ""))
-    if rider_id in riders_map:
-      metrics = item.get("period_metric", {})
-      p_assigned = get_field(
-          metrics, ["MONTHLY_VN_NUMBER_OF_PICKUP_PARCEL_ASSIGNED"], 0
-      )
-      p_success = get_field(
-          metrics, ["MONTHLY_NUMBER_OF_PICKUP_PARCEL_PICKED_UP"], 0
-      )
-      p_onhold = get_field(
-          metrics, ["MONTHLY_VN_NUMBER_OF_PICKUP_PARCEL_ON_HOLD"], 0
-      )
-      p_rate_val = get_field(metrics, ["MONTHLY_VN_PICKUP_SUCCESS_RATE"], 0)
-      raw_p_rate, p_rate_str = parse_rate(p_rate_val)
+    rider_id = str(item.get("driver_id", "")).strip()
+    if rider_id not in riders_map:
+      continue
+    metrics = item.get("period_metric") or {}
+    p_assigned = get_field(metrics, ["MONTHLY_VN_NUMBER_OF_PICKUP_PARCEL_ASSIGNED"], 0)
+    p_success = get_field(metrics, ["MONTHLY_NUMBER_OF_PICKUP_PARCEL_PICKED_UP"], 0)
+    p_onhold = get_field(metrics, ["MONTHLY_VN_NUMBER_OF_PICKUP_PARCEL_ON_HOLD"], 0)
+    p_rate_val = get_field(metrics, ["MONTHLY_VN_PICKUP_SUCCESS_RATE"], 0)
+    raw_p_rate, p_rate_str = parse_rate(p_rate_val)
 
-      riders_map[rider_id]["pickup_assigned"] = p_assigned
-      riders_map[rider_id]["pickup_success"] = p_success
-      riders_map[rider_id]["pickup_onhold"] = p_onhold
-      riders_map[rider_id]["pickup_rate"] = p_rate_str
-      riders_map[rider_id]["raw_pickup_rate"] = raw_p_rate
+    riders_map[rider_id]["pickup_assigned"] = p_assigned
+    riders_map[rider_id]["pickup_success"] = p_success
+    riders_map[rider_id]["pickup_onhold"] = p_onhold
+    riders_map[rider_id]["pickup_rate"] = p_rate_str
+    riders_map[rider_id]["raw_pickup_rate"] = raw_p_rate
 
-  riders = list(riders_map.values())
-  return sorted(riders, key=lambda x: x["raw_rate"], reverse=True)
+  riders = sorted(riders_map.values(), key=lambda x: x["raw_rate"], reverse=True)
+  performance_cache["data"] = riders
+  performance_cache["expire_time"] = now + timedelta(seconds=PERFORMANCE_CACHE_SECONDS)
+  logger.info("Performance processed: %s riders", len(riders))
+  return riders
 
 
 async def get_latest_data():
@@ -436,41 +451,63 @@ async def get_latest_data():
 
 
 @app.get("/", response_class=FileResponse)
-async def serve_index():
-  if os.path.exists("index.html"):
-    return FileResponse("index.html")
-  return HTMLResponse(
-      "<h1>Không tìm thấy file index.html trên hệ thống!</h1>", status_code=404
-  )
+async def root():
+  return FileResponse(INDEX_FILE)
+
+
+@app.get("/drivers-view", response_class=FileResponse)
+async def drivers_view():
+  return FileResponse(INDEX_FILE)
+
+
+@app.get("/health")
+async def health():
+  return {"status": "ok", "service": "spx-hub"}
 
 
 @app.get("/api/dashboard")
-async def dashboard():
+async def api_dashboard():
   return await get_latest_data()
 
 
 @app.get("/api/performance")
-async def performance_api():
-  """Endpoint trả về báo cáo hiệu suất tài xế phục vụ cho Tab Shiper"""
-  riders = await get_drivers_performance_data()
-  return {"riders": riders}
+async def api_performance(force: str = "0"):
+  try:
+    force_refresh = force.lower() in {"1", "true", "yes", "force"}
+    riders = await get_drivers_performance_data(force_refresh=force_refresh)
+    return {
+        "riders": riders,
+        "count": len(riders),
+        "cached": (
+            performance_cache["data"] is riders
+            and datetime.now(VIETNAM_TZ) < performance_cache["expire_time"]
+            and not force_refresh
+        ),
+    }
+  except Exception as e:
+    logger.exception("Lỗi API /api/performance")
+    raise HTTPException(status_code=502, detail=f"Không lấy được dữ liệu hiệu suất: {e}")
 
 
 @app.get("/api/stream")
 async def stream(request: Request):
-  async def gen():
-    while not await request.is_disconnected():
-      latest_data = await get_latest_data()
-      yield {
-          "event": "update",
-          "data": json.dumps(latest_data, ensure_ascii=False),
-      }
-      await asyncio.sleep(60)
+  async def event_generator():
+    while True:
+      if await request.is_disconnected():
+        break
+      try:
+        data = await get_latest_data()
+        yield {"event": "update", "data": json.dumps(data, ensure_ascii=False)}
+      except Exception as e:
+        logger.exception("Lỗi SSE")
+        yield {"event": "error", "data": json.dumps({"error": str(e)}, ensure_ascii=False)}
+      await asyncio.sleep(30)
 
-  return EventSourceResponse(gen())
+  return EventSourceResponse(event_generator(), ping=15)
 
 
 if __name__ == "__main__":
   import uvicorn
 
-  uvicorn.run(app, host="127.0.0.1", port=8000)
+  port = int(os.environ.get("PORT", "8000"))
+  uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
