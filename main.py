@@ -173,7 +173,7 @@ def parse_rate(success_rate):
 async def fetch_report_data(client, api_url, function_type):
   all_data_list = []
   pageno = 1
-  page_count = 50
+  page_count = 200  # Tăng số lượng item mỗi trang lên để lấy nhanh và đủ hơn
   now = datetime.now(VIETNAM_TZ)
   start_date_str = now.strftime("%Y-%m")
 
@@ -191,7 +191,7 @@ async def fetch_report_data(client, api_url, function_type):
           json=payload,
           cookies=SPX_COOKIES,
           headers=SPX_HEADERS,
-          timeout=15.0,
+          timeout=20.0,
       )
       if response.status_code != 200:
         logger.warning(
@@ -200,20 +200,28 @@ async def fetch_report_data(client, api_url, function_type):
             response.status_code,
             response.text[:500],
         )
-        raise RuntimeError(f"SPX Report HTTP {response.status_code}")
+        break  # Dừng nếu lỗi HTTP thay vì crash toàn bộ
+        
       result = response.json()
       data_list = result.get("data", {}).get("list", [])
+      
+      # Nếu danh sách trả về rỗng thì kết thúc quá trình phân trang
       if not data_list:
         break
+        
       all_data_list.extend(data_list)
+      
+      # Nếu số lượng trả về ít hơn page_count thì chắc chắn đã đến trang cuối cùng
       if len(data_list) < page_count:
         break
+        
       pageno += 1
     except Exception as e:
       logger.error(f"Lỗi khi gọi API Report {api_url} trang {pageno}: {e}")
       break
+      
+  logger.info(f"Đã load toàn bộ từ API {api_url}: tổng số bản ghi = {len(all_data_list)}")
   return all_data_list
-
 
 async def get_drivers_performance_data(force_refresh: bool = False):
   """Lấy report hiệu suất giao/lấy và cache để Render không gọi SPX liên tục."""
