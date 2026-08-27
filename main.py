@@ -65,7 +65,6 @@ ZONES_KV2_STR = (
     "Z2.02.TB.01,Z2.02.TĐ.01,Z2.02.TĐ.02,Z2.02.LX.01,Z2.02.TB.02,Z2.02.TB.03,Z2.02.TĐ.05,Z2.02.HB.02,Z2.02.CK.02,Z2.02.CK.03,Z2.02.ĐN.01,Z2.02.ĐN.02,Z2.02.ĐN.03,Z2.02.PN.02,Z2.02.CK.04,Z2.02.CK.01,Z2.02.CK.05,Z2.02.PN.04,Z2.02.PN.03,Z2.02.PN.05,Z2.01.TH.03,Z2.01.BH.01,Z2.01.TH.02,Z2.01.TH.01,Z2.01.TSN.03,Z2.01.BH.02,Z2.01.TB.02,Z2.01.TSN.02,Z2.01.TSH.03,Z2.01.TSH.01,Z2.01.TSH.02,Z2.01.TSN.01,Z2.01.BH.03,Z2.01.TB.01,Z2.01.TB.03,Z2.02.PN.01,Z2.02.LX.03,Z2.02.LX.02,Z2.02.HB.01.A,Z2.02.HB.01.C,Z2.02.HB.01.B,Z2.02.HB.01.D,Z2.02.HB.01.E,Z2.02.HB.03.A,Z2.02.HB.03.B"
 )
 
-# --- DANH SÁCH ID TÀI XẾ CỐ ĐỊNH (KV1 & KV2) ---
 KV1_DRIVER_IDS = set(
     x.strip()
     for x in """
@@ -134,14 +133,11 @@ async def fetch_api(client, payload):
       return data.get("total_count", data.get("total", 0)), data.get(
           "list", []
       ) or data.get("orders", [])
-    else:
-      logger.warning(f"SPX API trả về mã lỗi: {response.status_code}")
   except Exception as e:
     logger.error(f"API Error: {e}")
   return 0, []
 
 
-# --- CÁC HÀM XỬ LÝ REPORT HIỆU SUẤT TÀI XẾ ---
 def get_field(metrics_dict, keys, default=0):
   for key in keys:
     if key in metrics_dict and metrics_dict[key] is not None:
@@ -196,7 +192,7 @@ async def fetch_report_data(client, api_url, function_type):
         break
       pageno += 1
     except Exception as e:
-      logger.error(f"Lỗi khi gọi API Report {api_url} trang {pageno}: {e}")
+      logger.error(f"Lỗi khi gọi API Report: {e}")
       break
   return all_data_list
 
@@ -258,9 +254,6 @@ async def get_drivers_performance_data():
       )
 
       riders_map[rider_id] = {
-          "avatar": item.get(
-              "avatar_url", "https://via.placeholder.com/150"
-          ),
           "name": item.get("driver_name", "N/A"),
           "id": rider_id,
           "khu_vuc": khu_vuc,
@@ -451,15 +444,6 @@ async def serve_index():
   )
 
 
-@app.get("/drivers-view", response_class=FileResponse)
-async def serve_drivers_view():
-  if os.path.exists("index.html"):
-    return FileResponse("index.html")
-  return HTMLResponse(
-      "<h1>Không tìm thấy file index.html trên hệ thống!</h1>", status_code=404
-  )
-
-
 @app.get("/api/dashboard")
 async def dashboard():
   return await get_latest_data()
@@ -467,7 +451,7 @@ async def dashboard():
 
 @app.get("/api/performance")
 async def performance_api():
-  """Endpoint trả về báo cáo hiệu suất tài xế"""
+  """Endpoint trả về báo cáo hiệu suất tài xế phục vụ cho Tab Shiper"""
   riders = await get_drivers_performance_data()
   return {"riders": riders}
 
