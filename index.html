@@ -577,14 +577,6 @@
         });
         document.getElementById('searchInput').addEventListener('input', renderPerformanceTable);
 
-        const shiperHeader = document.getElementById('content-shiper').querySelector('.mb-6');
-        const refreshBtn = document.createElement('button');
-        refreshBtn.type = 'button';
-        refreshBtn.className = 'px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg shadow flex items-center gap-2';
-        refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Làm mới';
-        refreshBtn.addEventListener('click', () => loadPerformanceData(true));
-        shiperHeader.appendChild(refreshBtn);
-
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
