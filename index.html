@@ -74,7 +74,10 @@
                         <i class="fa-solid fa-truck text-base"></i>
                         <span>Shiper</span>
                     </div>
-                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">12</span>
+                    <div class="flex items-center gap-1.5">
+                        <span id="shiper-total-riders-badge" title="Tổng rider Top Giao Hàng" class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">...</span>
+                        <span id="shiper-active-riders-badge" title="Tổng rider đang hoạt động" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">...</span>
+                    </div>
                 </a>
                 <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
                     <div class="flex items-center gap-3">
@@ -431,6 +434,18 @@
             const n = Number(value);
             return Number.isFinite(n) ? n.toLocaleString('vi-VN') : '0';
         }
+
+        // Badge Shiper:
+        // 1) Tổng rider Top Giao Hàng = tổng rider từ /api/performance.
+        // 2) Tổng rider đang hoạt động = số rider trong drivers_detail KV1 + KV2.
+        function updateShiperBadges(activeCount) {
+            const totalBadge = document.getElementById('shiper-total-riders-badge');
+            const activeBadge = document.getElementById('shiper-active-riders-badge');
+            if (totalBadge) totalBadge.innerText = formatNumber(performanceData.length);
+            if (activeBadge && activeCount !== undefined && activeCount !== null) {
+                activeBadge.innerText = formatNumber(activeCount);
+            }
+        }
         function formatRate(value) {
             const n = Number(value);
             return Number.isFinite(n) ? `${n.toFixed(1)}%` : '0.0%';
@@ -512,8 +527,7 @@
                 performanceData = Array.isArray(result.riders) ? result.riders : [];
                 performanceLoaded = true;
                 renderPerformanceTable();
-                const badge = document.querySelector('#nav-shiper span:last-child');
-                if (badge) badge.innerText = performanceData.length.toLocaleString('vi-VN');
+                updateShiperBadges();
             } catch (err) {
                 console.error('Lỗi tải /api/performance:', err);
                 loading.style.display = 'none';
@@ -652,6 +666,7 @@
             const totalDriversCount = (data.drivers_detail_kv1 ? data.drivers_detail_kv1.length : 0) + 
                                      (data.drivers_detail_kv2 ? data.drivers_detail_kv2.length : 0);
             document.getElementById('group-total-drivers').innerText = totalDriversCount.toLocaleString('vi-VN');
+            updateShiperBadges(totalDriversCount);
 
             if (data.ten_hub) {
                 document.getElementById('hub-title').innerText = "Tổng quan - " + data.ten_hub;
@@ -703,6 +718,8 @@
                 } catch (e) { console.error('Lỗi đọc cache LocalStorage:', e); }
             }
             connectSSE();
+            // Tải performance ngay khi mở trang để badge tổng rider Top Giao Hàng tự cập nhật.
+            loadPerformanceData(false);
         });
     </script>
 </body>
