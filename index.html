@@ -1,772 +1,2835 @@
+```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPX Hub Dashboard - Real-time SSE Integration</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        spxBlue: '#1e40af',
-                        spxLightBlue: '#eff6ff',
-                        spxSidebar: '#f8fafc',
-                    }
-                }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SPX Hub Dashboard - Real-time SSE Integration</title>
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: {
+                spxBlue: '#1e40af',
+                spxLightBlue: '#eff6ff',
+                spxSidebar: '#f8fafc',
             }
         }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-        }
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-    </style>
+    }
+}
+</script>
+
+<!-- FontAwesome -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f1f5f9;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+/* Nút sort */
+.sort-btn {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sort-btn:hover {
+    color: #2563eb;
+}
+
+.sort-btn i {
+    min-width: 12px;
+}
+</style>
 </head>
+
 <body class="flex h-screen overflow-hidden text-slate-700">
 
-    <!-- MOBILE OVERLAY BACKDROP -->
-    <div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-25 hidden md:hidden transition-opacity"></div>
+<!-- =========================================================
+     MOBILE OVERLAY
+========================================================= -->
+<div id="sidebar-overlay"
+     onclick="toggleSidebar()"
+     class="fixed inset-0 bg-black/50 z-25 hidden md:hidden transition-opacity">
+</div>
 
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 select-none transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
-        <div>
-            <!-- Logo Header -->
-            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                <div class="flex items-center gap-2">
-                    <div class="bg-blue-600 text-white font-bold p-2 rounded-lg flex items-center justify-center w-8 h-8">
-                        <i class="fa-solid fa-box text-sm"></i>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="font-extrabold text-blue-600 text-xl tracking-wide">SPX</span>
-                        <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">Hub</span>
-                    </div>
-                </div>
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-slate-600 p-1">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
 
-            <!-- Navigation Menu -->
-            <nav class="px-3 py-4 space-y-1 text-sm font-medium overflow-y-auto max-h-[calc(100vh-140px)]">
-                <a href="#" onclick="switchTab('dashboard')" id="nav-dashboard" class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-chart-pie text-base"></i>
-                        <span>Dashboard</span>
-                    </div>
-                </a>
-                <a href="#" onclick="switchTab('shiper')" id="nav-shiper" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-truck text-base"></i>
-                        <span>Shiper</span>
-                    </div>
-                    <div class="flex items-center gap-1.5">
-                        <span id="shiper-total-riders-badge" title="Tổng rider Top Giao Hàng" class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">...</span>
-                        <span id="shiper-active-riders-badge" title="Tổng rider đang hoạt động" class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">...</span>
-                    </div>
-                </a>
-                <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <div class="flex items-center gap-3">
-                        <i class="fa-solid fa-boxes-stacked text-base"></i>
-                        <span>Hàng hóa</span>
-                    </div>
-                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">8</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <i class="fa-solid fa-warehouse text-base"></i>
-                    <span>In-Station</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <i class="fa-solid fa-chart-line text-base"></i>
-                    <span>Dự báo</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <i class="fa-solid fa-rotate-left text-base"></i>
-                    <span>Return</span>
-                </a>
-                <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
-                    <i class="fa-solid fa-gear text-base"></i>
-                    <span>Cài đặt</span>
-                </a>
-            </nav>
-        </div>
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+<aside id="sidebar"
+       class="fixed md:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 select-none transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
 
-        <!-- User Profile Footer -->
-        <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 font-bold text-xs">
-                    <i class="fa-solid fa-user"></i>
-                </div>
-                <div>
-                    <p class="text-xs font-semibold text-slate-800">Admin SPX</p>
-                    <p class="text-[10px] text-emerald-600 flex items-center gap-1 font-medium">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span> Đang hoạt động
-                    </p>
-                </div>
-            </div>
-        </div>
-    </aside>
+    <div>
 
-    <!-- MAIN CONTENT AREA -->
-    <main class="flex-1 flex flex-col h-screen overflow-y-auto w-full">
-        <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
-            <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden text-slate-600 hover:text-blue-600 p-1 text-lg">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
-                <div class="flex items-center gap-2 text-blue-600 font-bold text-base md:text-lg">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span id="hub-title">Tổng quan SPX Hub</span>
-                </div>
-            </div>
+        <!-- Logo -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+
             <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
-                    <i class="fa-solid fa-location-dot text-blue-600"></i>
-                    <span class="truncate max-w-[140px] md:max-w-none" id="hub-location-name">52-HCM SDD-01 Hub</span>
-                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
-                </div>
-            </div>
-        </header>
 
-        <!-- TAB CONTENT: DASHBOARD -->
-        <div id="content-dashboard" class="p-4 md:p-6 space-y-6">
-            <!-- Top Summary Cards (Nhóm 1, 2, 3) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                <!-- Nhóm 1 -->
-                <div class="space-y-4">
-                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-truck-fast text-blue-600"></i>
-                        <span>TỔNG ĐƠN XUẤT KHO: <span id="group-total-orders" class="ml-1 text-blue-600 font-extrabold">...</span></span>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 1</span></div>
-                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
-                        </div>
-                        <div id="total-orders-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv1">--:--:--</span></div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-blue-600"></i> <span>Khu vực 2</span></div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
-                        </div>
-                        <div id="total-orders-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="update-time-kv2">--:--:--</span></div>
-                    </div>
+                <div class="bg-blue-600 text-white font-bold p-2 rounded-lg flex items-center justify-center w-8 h-8">
+                    <i class="fa-solid fa-box text-sm"></i>
                 </div>
 
-                <!-- Nhóm 2 -->
-                <div class="space-y-4">
-                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-box-archive text-amber-600"></i>
-                        <span>TỔNG ĐƠN TỒN KHO CHƯA ATTEM: <span id="group-total-inventory" class="ml-1 text-amber-600 font-extrabold">...</span></span>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 1</span></div>
-                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
-                        </div>
-                        <div id="total-inventory-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv1">--:--:--</span></div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-amber-600"></i> <span>Khu vực 2</span></div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
-                        </div>
-                        <div id="total-inventory-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="inventory-time-kv2">--:--:--</span></div>
-                    </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="font-extrabold text-blue-600 text-xl tracking-wide">
+                        SPX
+                    </span>
+
+                    <span class="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">
+                        Hub
+                    </span>
                 </div>
 
-                <!-- Nhóm 3 -->
-                <div class="space-y-4">
-                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-clipboard-check text-violet-600"></i>
-                        <span>TỔNG ĐƠN TỒN KHO ĐÃ ATTEM: <span id="group-total-attempted" class="ml-1 text-violet-600 font-extrabold">...</span></span>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 1</span></div>
-                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
-                        </div>
-                        <div id="total-inventory-attempted-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv1">--:--:--</span></div>
-                    </div>
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-violet-600"></i> <span>Khu vực 2</span></div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
-                        </div>
-                        <div id="total-inventory-attempted-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="attempted-time-kv2">--:--:--</span></div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Nhóm 4 & 5 (Warehouse & Pickup) -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                <!-- Warehouse -->
-                <div class="space-y-4">
-                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-warehouse text-emerald-600"></i>
-                        <span>DỰ BÁO NHẬP KHO - WAREHOUSE: <span id="group-total-warehouse" class="ml-1 text-emerald-600 font-extrabold">...</span></span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div>
-                            <div id="forecast-warehouse-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv1">--:--:--</span></div>
-                        </div>
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-emerald-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div>
-                            <div id="forecast-warehouse-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="warehouse-time-kv2">--:--:--</span></div>
-                        </div>
-                    </div>
+            <button onclick="toggleSidebar()"
+                    class="md:hidden text-slate-400 hover:text-slate-600 p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+        </div>
+
+
+        <!-- Navigation -->
+        <nav class="px-3 py-4 space-y-1 text-sm font-medium overflow-y-auto max-h-[calc(100vh-140px)]">
+
+            <a href="#"
+               onclick="switchTab('dashboard')"
+               id="nav-dashboard"
+               class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition">
+
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-chart-pie text-base"></i>
+                    <span>Dashboard</span>
                 </div>
 
-                <!-- Pickup -->
-                <div class="space-y-4">
-                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fa-solid fa-boxes-packing text-indigo-600"></i>
-                        <span>DỰ BÁO NHẬP KHO - PICKUP: <span id="group-total-pickup" class="ml-1 text-indigo-600 font-extrabold">...</span></span>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 1</span></div><span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span></div>
-                            <div id="forecast-pickup-kv1" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv1">--:--:--</span></div>
-                        </div>
-                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2 text-slate-500 text-xs font-semibold"><i class="fa-solid fa-location-crosshairs text-indigo-600"></i> <span>Khu vực 2</span></div><span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span></div>
-                            <div id="forecast-pickup-kv2" class="text-3xl font-extrabold text-slate-900 mb-2">...</div>
-                            <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium"><i class="fa-regular fa-clock"></i> Cập nhật: <span id="pickup-time-kv2">--:--:--</span></div>
-                        </div>
-                    </div>
+            </a>
+
+
+            <a href="#"
+               onclick="switchTab('shiper')"
+               id="nav-shiper"
+               class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-truck text-base"></i>
+                    <span>Shiper</span>
                 </div>
+
+                <div class="flex items-center gap-1.5">
+
+                    <span id="shiper-total-riders-badge"
+                          title="Tổng rider Top Giao Hàng"
+                          class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-semibold">
+                        ...
+                    </span>
+
+                    <span id="shiper-active-riders-badge"
+                          title="Tổng rider đang hoạt động"
+                          class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                        ...
+                    </span>
+
+                </div>
+
+            </a>
+
+
+            <a href="#"
+               class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-boxes-stacked text-base"></i>
+                    <span>Hàng hóa</span>
+                </div>
+
+                <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold">
+                    8
+                </span>
+
+            </a>
+
+
+            <a href="#"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <i class="fa-solid fa-warehouse text-base"></i>
+                <span>In-Station</span>
+
+            </a>
+
+
+            <a href="#"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <i class="fa-solid fa-chart-line text-base"></i>
+                <span>Dự báo</span>
+
+            </a>
+
+
+            <a href="#"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <i class="fa-solid fa-rotate-left text-base"></i>
+                <span>Return</span>
+
+            </a>
+
+
+            <a href="#"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+
+                <i class="fa-solid fa-gear text-base"></i>
+                <span>Cài đặt</span>
+
+            </a>
+
+        </nav>
+
+    </div>
+
+
+    <!-- User -->
+    <div class="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+
+        <div class="flex items-center gap-3">
+
+            <div class="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-700 font-bold text-xs">
+                <i class="fa-solid fa-user"></i>
             </div>
 
-            <!-- Nhóm 6: Driver đang hoạt động -->
-            <div class="space-y-4 pt-2">
+            <div>
+
+                <p class="text-xs font-semibold text-slate-800">
+                    Admin SPX
+                </p>
+
+                <p class="text-[10px] text-emerald-600 flex items-center gap-1 font-medium">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                    Đang hoạt động
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+<main class="flex-1 flex flex-col h-screen overflow-y-auto w-full">
+
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 px-4 md:px-6 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
+
+        <div class="flex items-center gap-3">
+
+            <button onclick="toggleSidebar()"
+                    class="md:hidden text-slate-600 hover:text-blue-600 p-1 text-lg">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="flex items-center gap-2 text-blue-600 font-bold text-base md:text-lg">
+
+                <i class="fa-solid fa-chart-pie"></i>
+
+                <span id="hub-title">
+                    Tổng quan SPX Hub
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="flex items-center gap-2">
+
+            <div class="flex items-center gap-1.5 border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+
+                <i class="fa-solid fa-location-dot text-blue-600"></i>
+
+                <span class="truncate max-w-[140px] md:max-w-none"
+                      id="hub-location-name">
+                    52-HCM SDD-01 Hub
+                </span>
+
+                <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         DASHBOARD
+    ====================================================== -->
+    <div id="content-dashboard"
+         class="p-4 md:p-6 space-y-6">
+
+
+        <!-- GROUP 1 - ORDERS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+
+
+            <!-- Orders -->
+            <div class="space-y-4">
+
                 <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-motorcycle text-rose-600"></i>
-                    <span>TỔNG DRIVER ĐANG HOẠT ĐỘNG: <span id="group-total-drivers" class="ml-1 text-rose-600 font-extrabold">...</span></span>
+
+                    <i class="fa-solid fa-truck-fast text-blue-600"></i>
+
+                    <span>
+                        TỔNG ĐƠN XUẤT KHO:
+                        <span id="group-total-orders"
+                              class="ml-1 text-blue-600 font-extrabold">
+                            ...
+                        </span>
+                    </span>
+
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Khu vực 1 -->
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <div class="text-slate-700 text-xs font-bold flex items-center gap-2">
-                                <i class="fa-solid fa-location-crosshairs text-blue-600"></i> Khu vực 1
-                                <span id="count-driver-kv1" class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">0 driver</span>
-                            </div>
-                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">KV1</span>
+
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                    <div class="flex items-center justify-between mb-2">
+
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-blue-600"></i>
+                            <span>Khu vực 1</span>
                         </div>
-                        <div id="driver-list-kv1" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                            <div class="text-xs text-slate-400 italic">Đang tải dữ liệu driver KV1...</div>
-                        </div>
+
+                        <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                            KV1
+                        </span>
+
                     </div>
 
-                    <!-- Khu vực 2 -->
-                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-                            <div class="text-slate-700 text-xs font-bold flex items-center gap-2">
-                                <i class="fa-solid fa-location-crosshairs text-emerald-600"></i> Khu vực 2
-                                <span id="count-driver-kv2" class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">0 driver</span>
-                            </div>
-                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">KV2</span>
-                        </div>
-                        <div id="driver-list-kv2" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
-                            <div class="text-xs text-slate-400 italic">Đang tải dữ liệu driver KV2...</div>
-                        </div>
+                    <div id="total-orders-kv1"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
                     </div>
-                </div>
-            </div>
 
-            <!-- Footer Note -->
-            <div class="flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 pt-2 pb-4 gap-2 text-center sm:text-left">
-                <span class="flex items-center gap-1.5" id="api-status-text">
-                    <i class="fa-solid fa-database"></i> Đang kết nối FastAPI SSE Stream...
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <i class="fa-solid fa-rotate animate-spin" style="animation-duration: 4s;"></i> Đồng bộ Real-time tự động
-                </span>
-            </div>
-        </div>
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
 
-        <!-- TAB CONTENT: SHIPER (Hiệu Suất Driver) -->
-        <div id="content-shiper" class="p-4 md:p-6 space-y-6 hidden">
-            <!-- Thanh chuyển đổi tiêu chí (Tab chuyển đổi) -->
-            <div class="mb-4 flex flex-wrap gap-2">
-                <button id="tabDelivery" class="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center">
-                    <i class="fas fa-shipping-fast mr-2"></i> Top Giao Hàng
-                </button>
-                <button id="tabPickup" class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center">
-                    <i class="fas fa-box-open mr-2"></i> Top Lấy Hàng
-                </button>
-            </div>
+                        <i class="fa-regular fa-clock"></i>
 
-            <!-- Tiêu đề & Tìm kiếm -->
-            <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h2 class="text-lg font-medium text-gray-800 uppercase" id="tableTitle">TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT</h2>
-                    <p class="text-sm text-gray-500" id="tableSubtitle">Danh sách được sắp xếp từ cao xuống thấp.</p>
+                        Cập nhật:
+                        <span id="update-time-kv1">
+                            --:--:--
+                        </span>
+
+                    </div>
+
                 </div>
 
-                <!-- Ô tìm kiếm -->
-                <div class="relative">
-                    <input type="text" id="searchInput" placeholder="Tìm kiếm tài xế, ID, Khu vực..."
-                           class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
-                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                </div>
-            </div>
 
-            <!-- Bảng dữ liệu -->
-            <div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Khu Vực</th>
-                                <th scope="col" onclick="sortData('name')" class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
-                                    <div class="flex items-center justify-between">
-                                        <span>Rider</span>
-                                        <i id="sort-icon-name" class="fas fa-sort text-gray-400 ml-1"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" onclick="sortData('days')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span>Số Ngày Làm</span>
-                                        <i id="sort-icon-days" class="fas fa-sort text-gray-400"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" onclick="sortData('metric')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderMetric">Đơn Giao <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i></th>
-                                <th scope="col" onclick="sortData('success')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderSuccess">Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i></th>
-                                <th scope="col" onclick="sortData('hold')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span>Tồn/Hold</span>
-                                        <i id="sort-icon-hold" class="fas fa-sort text-gray-400"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" onclick="sortData('rate')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span>Tỷ Lệ Thành Công</span>
-                                        <i id="sort-icon-rate" class="fas fa-sort-down text-blue-600"></i>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200" id="riderTableBody">
-                            <tr id="loadingRiderRow">
-                                <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">
-                                    <i class="fas fa-spinner fa-spin text-2xl mb-2 text-blue-500 block"></i>
-                                    Đang tải dữ liệu hiệu suất driver...
-                                </td>
-                            </tr>
-                            <tr id="noDataRow" style="display:none;">
-                                <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">
-                                    <i class="fas fa-box-open text-3xl mb-2 text-gray-400 block"></i>
-                                    Không có dữ liệu hiệu suất.
-                                </td>
-                            </tr>
-                            <tr id="errorDataRow" style="display:none;">
-                                <td colspan="7" class="px-6 py-10 text-center text-sm text-rose-500">
-                                    <i class="fas fa-triangle-exclamation text-3xl mb-2 block"></i>
-                                    <span id="performanceErrorText">Không thể tải dữ liệu hiệu suất.</span>
-                                </td>
-                            </tr>
-                            <tr id="noResultRow" style="display: none;">
-                                <td colspan="7" class="px-6 py-10 text-center text-sm text-gray-500">
-                                    <i class="fas fa-search text-3xl mb-2 text-gray-400 block"></i>
-                                    Không tìm thấy driver nào phù hợp với từ khóa tìm kiếm.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
 
-            <!-- Nút Bấm Bật/Tắt Toàn bộ -->
-            <div class="mt-6 flex justify-center">
-                <button id="toggleBtn" class="px-6 py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center justify-center">
-                    <i class="fas fa-list mr-2" id="toggleIcon"></i> 
-                    <span id="toggleText">Xem toàn bộ driver</span>
-                </button>
-            </div>
-        </div>
-    </main>
+                    <div class="flex items-center justify-between mb-2">
 
-    <script>
-        let performanceLoaded = false;
-        let performanceLoading = false;
-        let performanceData = [];
-        let isShowingAll = false;
-        let currentTab = 'delivery';
-
-        // Trạng thái sắp xếp cột
-        let currentSortColumn = 'rate'; 
-        let currentSortDirection = 'desc';
-
-        function switchTab(tabName) {
-            const navDashboard = document.getElementById('nav-dashboard');
-            const navShiper = document.getElementById('nav-shiper');
-            const contentDashboard = document.getElementById('content-dashboard');
-            const contentShiper = document.getElementById('content-shiper');
-
-            if (tabName === 'dashboard') {
-                navDashboard.className = "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
-                navShiper.className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
-                contentDashboard.classList.remove('hidden');
-                contentShiper.classList.add('hidden');
-            } else if (tabName === 'shiper') {
-                navShiper.className = "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
-                navDashboard.className = "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
-                contentShiper.classList.remove('hidden');
-                contentDashboard.classList.add('hidden');
-                loadPerformanceData(false);
-            }
-        }
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-
-        function escapeHtml(value) {
-            return String(value ?? '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-        }
-        function formatNumber(value) {
-            const n = Number(value);
-            return Number.isFinite(n) ? n.toLocaleString('vi-VN') : '0';
-        }
-
-        function updateShiperBadges(activeCount) {
-            const totalBadge = document.getElementById('shiper-total-riders-badge');
-            const activeBadge = document.getElementById('shiper-active-riders-badge');
-            if (totalBadge) totalBadge.innerText = formatNumber(performanceData.length);
-            if (activeBadge && activeCount !== undefined && activeCount !== null) {
-                activeBadge.innerText = formatNumber(activeCount);
-            }
-        }
-        function formatRate(value) {
-            const n = Number(value);
-            return Number.isFinite(n) ? `${n.toFixed(1)}%` : '0.0%';
-        }
-        function getRate(rider) {
-            return currentTab === 'delivery' ? Number(rider.raw_rate) || 0 : Number(rider.raw_pickup_rate) || 0;
-        }
-        function getFieldForTab(rider, field) {
-            return currentTab === 'delivery' ? (rider[field] ?? 0) : (rider[`pickup_${field}`] ?? 0);
-        }
-
-        // Hàm xử lý khi bấm vào tiêu đề để sắp xếp
-        function sortData(column) {
-            if (currentSortColumn === column) {
-                currentSortDirection = currentSortDirection === 'desc' ? 'asc' : 'desc';
-            } else {
-                currentSortColumn = column;
-                currentSortDirection = (column === 'name') ? 'asc' : 'desc';
-            }
-            updateSortIcons();
-            renderPerformanceTable();
-        }
-
-        function updateSortIcons() {
-            const columns = ['name', 'days', 'metric', 'success', 'hold', 'rate'];
-            columns.forEach(col => {
-                const icon = document.getElementById(`sort-icon-${col}`);
-                if (!icon) return;
-                if (col === currentSortColumn) {
-                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up text-blue-600 ml-1' : 'fas fa-sort-down text-blue-600 ml-1';
-                } else {
-                    icon.className = 'fas fa-sort text-gray-400 ml-1';
-                }
-            });
-        }
-
-        function renderPerformanceTable() {
-            const tbody = document.getElementById('riderTableBody');
-            const loading = document.getElementById('loadingRiderRow');
-            const noData = document.getElementById('noDataRow');
-            const error = document.getElementById('errorDataRow');
-            const noResult = document.getElementById('noResultRow');
-            
-            if (loading) loading.style.display = 'none';
-            if (noData) noData.style.display = 'none';
-            if (error) error.style.display = 'none';
-            if (noResult) noResult.style.display = 'none';
-
-            Array.from(tbody.children).forEach(row => {
-                if (row.id !== 'loadingRiderRow' && row.id !== 'noDataRow' && row.id !== 'errorDataRow' && row.id !== 'noResultRow') {
-                    row.remove();
-                }
-            });
-
-            if (!performanceData || performanceData.length === 0) {
-                if (noData) noData.style.display = '';
-                return;
-            }
-
-            // Sắp xếp dữ liệu đa cột tăng/giảm tùy chọn
-            const sortedData = [...performanceData].sort((a, b) => {
-                let valA, valB;
-
-                switch (currentSortColumn) {
-                    case 'name':
-                        valA = String(a.rider_name || '').toLowerCase();
-                        valB = String(b.rider_name || '').toLowerCase();
-                        return currentSortDirection === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                    case 'days':
-                        valA = Number(a.total_days || a.so_ngay_lam || 0);
-                        valB = Number(b.total_days || b.so_ngay_lam || 0);
-                        break;
-                    case 'metric':
-                        valA = Number(getFieldForTab(a, 'total')) || 0;
-                        valB = Number(getFieldForTab(b, 'total')) || 0;
-                        break;
-                    case 'success':
-                        valA = Number(getFieldForTab(a, 'success')) || 0;
-                        valB = Number(getFieldForTab(b, 'success')) || 0;
-                        break;
-                    case 'hold':
-                        valA = Number(getFieldForTab(a, 'hold') || 0);
-                        valB = Number(getFieldForTab(b, 'hold') || 0);
-                        break;
-                    case 'rate':
-                    default:
-                        valA = getRate(a);
-                        valB = getRate(b);
-                        break;
-                }
-
-                return currentSortDirection === 'asc' ? valA - valB : valB - valA;
-            });
-
-            const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
-            const filteredData = sortedData.filter(rider => {
-                if (!searchQuery) return true;
-                const name = String(rider.rider_name || '').toLowerCase();
-                const id = String(rider.rider_id || '').toLowerCase();
-                const area = String(rider.hub_area || rider.khu_vuc || '').toLowerCase();
-                return name.includes(searchQuery) || id.includes(searchQuery) || area.includes(searchQuery);
-            });
-
-            if (filteredData.length === 0) {
-                if (noResult) noResult.style.display = '';
-                return;
-            }
-
-            const displayData = isShowingAll ? filteredData : filteredData.slice(0, 5);
-
-            displayData.forEach((rider, index) => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/70 transition-colors";
-
-                const area = escapeHtml(rider.hub_area || rider.khu_vuc || 'N/A');
-                const name = escapeHtml(rider.rider_name || 'Không rõ');
-                const id = escapeHtml(rider.rider_id || '');
-                const days = formatNumber(rider.total_days || rider.so_ngay_lam || 0);
-                
-                const metricVal = formatNumber(getFieldForTab(rider, 'total'));
-                const successVal = formatNumber(getFieldForTab(rider, 'success'));
-                const holdVal = formatNumber(getFieldForTab(rider, 'hold') || 0);
-                const rateVal = formatRate(getRate(rider));
-
-                let rankBadge = `<span class="text-xs font-semibold text-gray-500 w-6 text-inline-block">#${index + 1}</span>`;
-                if (index === 0 && !searchQuery && !isShowingAll) {
-                    rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold"><i class="fas fa-crown text-[10px]"></i></span>`;
-                } else if (index === 1 && !searchQuery && !isShowingAll) {
-                    rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">2</span>`;
-                } else if (index === 2 && !searchQuery && !isShowingAll) {
-                    rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">3</span>`;
-                }
-
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-xs font-semibold text-slate-600">
-                        <span class="px-2 py-1 bg-slate-100 rounded-md border border-slate-200">${area}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center gap-2">
-                            ${rankBadge}
-                            <div>
-                                <div class="text-sm font-bold text-slate-800">${name}</div>
-                                <div class="text-[11px] text-slate-400 font-mono">ID: ${id}</div>
-                            </div>
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-blue-600"></i>
+                            <span>Khu vực 2</span>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-slate-700">${days}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-blue-600">${metricVal}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-emerald-600">${successVal}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-semibold text-amber-600">${holdVal}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                        <span class="px-2.5 py-1 rounded-full text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-100">${rateVal}</span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
+
+                        <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                            KV2
+                        </span>
+
+                    </div>
+
+                    <div id="total-orders-kv2"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        Cập nhật:
+                        <span id="update-time-kv2">
+                            --:--:--
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Inventory chưa attempt -->
+            <div class="space-y-4">
+
+                <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+
+                    <i class="fa-solid fa-box-archive text-amber-600"></i>
+
+                    <span>
+                        TỔNG ĐƠN TỒN KHO CHƯA ATTEM:
+                        <span id="group-total-inventory"
+                              class="ml-1 text-amber-600 font-extrabold">
+                            ...
+                        </span>
+                    </span>
+
+                </div>
+
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                    <div class="flex items-center justify-between mb-2">
+
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-amber-600"></i>
+                            <span>Khu vực 1</span>
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                            KV1
+                        </span>
+
+                    </div>
+
+                    <div id="total-inventory-kv1"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        Cập nhật:
+                        <span id="inventory-time-kv1">
+                            --:--:--
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                    <div class="flex items-center justify-between mb-2">
+
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-amber-600"></i>
+                            <span>Khu vực 2</span>
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                            KV2
+                        </span>
+
+                    </div>
+
+                    <div id="total-inventory-kv2"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        Cập nhật:
+                        <span id="inventory-time-kv2">
+                            --:--:--
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Inventory đã attempt -->
+            <div class="space-y-4">
+
+                <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+
+                    <i class="fa-solid fa-clipboard-check text-violet-600"></i>
+
+                    <span>
+                        TỔNG ĐƠN TỒN KHO ĐÃ ATTEM:
+                        <span id="group-total-attempted"
+                              class="ml-1 text-violet-600 font-extrabold">
+                            ...
+                        </span>
+                    </span>
+
+                </div>
+
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                    <div class="flex items-center justify-between mb-2">
+
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-violet-600"></i>
+                            <span>Khu vực 1</span>
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                            KV1
+                        </span>
+
+                    </div>
+
+                    <div id="total-inventory-attempted-kv1"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        Cập nhật:
+                        <span id="attempted-time-kv1">
+                            --:--:--
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                    <div class="flex items-center justify-between mb-2">
+
+                        <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                            <i class="fa-solid fa-location-crosshairs text-violet-600"></i>
+                            <span>Khu vực 2</span>
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                            KV2
+                        </span>
+
+                    </div>
+
+                    <div id="total-inventory-attempted-kv2"
+                         class="text-3xl font-extrabold text-slate-900 mb-2">
+                        ...
+                    </div>
+
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        Cập nhật:
+                        <span id="attempted-time-kv2">
+                            --:--:--
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             WAREHOUSE + PICKUP
+        ====================================================== -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+
+
+            <!-- Warehouse -->
+            <div class="space-y-4">
+
+                <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+
+                    <i class="fa-solid fa-warehouse text-emerald-600"></i>
+
+                    <span>
+                        DỰ BÁO NHẬP KHO - WAREHOUSE:
+                        <span id="group-total-warehouse"
+                              class="ml-1 text-emerald-600 font-extrabold">
+                            ...
+                        </span>
+                    </span>
+
+                </div>
+
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                        <div class="flex items-center justify-between mb-2">
+
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                <i class="fa-solid fa-location-crosshairs text-emerald-600"></i>
+                                <span>Khu vực 1</span>
+                            </div>
+
+                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                                KV1
+                            </span>
+
+                        </div>
+
+                        <div id="forecast-warehouse-kv1"
+                             class="text-3xl font-extrabold text-slate-900 mb-2">
+                            ...
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+                            <i class="fa-regular fa-clock"></i>
+                            Cập nhật:
+                            <span id="warehouse-time-kv1">--:--:--</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                        <div class="flex items-center justify-between mb-2">
+
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                <i class="fa-solid fa-location-crosshairs text-emerald-600"></i>
+                                <span>Khu vực 2</span>
+                            </div>
+
+                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                                KV2
+                            </span>
+
+                        </div>
+
+                        <div id="forecast-warehouse-kv2"
+                             class="text-3xl font-extrabold text-slate-900 mb-2">
+                            ...
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+                            <i class="fa-regular fa-clock"></i>
+                            Cập nhật:
+                            <span id="warehouse-time-kv2">--:--:--</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Pickup -->
+            <div class="space-y-4">
+
+                <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+
+                    <i class="fa-solid fa-boxes-packing text-indigo-600"></i>
+
+                    <span>
+                        DỰ BÁO NHẬP KHO - PICKUP:
+                        <span id="group-total-pickup"
+                              class="ml-1 text-indigo-600 font-extrabold">
+                            ...
+                        </span>
+                    </span>
+
+                </div>
+
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                        <div class="flex items-center justify-between mb-2">
+
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                <i class="fa-solid fa-location-crosshairs text-indigo-600"></i>
+                                <span>Khu vực 1</span>
+                            </div>
+
+                            <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                                KV1
+                            </span>
+
+                        </div>
+
+                        <div id="forecast-pickup-kv1"
+                             class="text-3xl font-extrabold text-slate-900 mb-2">
+                            ...
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+                            <i class="fa-regular fa-clock"></i>
+                            Cập nhật:
+                            <span id="pickup-time-kv1">--:--:--</span>
+                        </div>
+
+                    </div>
+
+
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+
+                        <div class="flex items-center justify-between mb-2">
+
+                            <div class="flex items-center gap-2 text-slate-500 text-xs font-semibold">
+                                <i class="fa-solid fa-location-crosshairs text-indigo-600"></i>
+                                <span>Khu vực 2</span>
+                            </div>
+
+                            <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                                KV2
+                            </span>
+
+                        </div>
+
+                        <div id="forecast-pickup-kv2"
+                             class="text-3xl font-extrabold text-slate-900 mb-2">
+                            ...
+                        </div>
+
+                        <div class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium">
+                            <i class="fa-regular fa-clock"></i>
+                            Cập nhật:
+                            <span id="pickup-time-kv2">--:--:--</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             DRIVER ACTIVE
+        ====================================================== -->
+        <div class="space-y-4 pt-2">
+
+            <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+
+                <i class="fa-solid fa-motorcycle text-rose-600"></i>
+
+                <span>
+                    TỔNG DRIVER ĐANG HOẠT ĐỘNG:
+                    <span id="group-total-drivers"
+                          class="ml-1 text-rose-600 font-extrabold">
+                        ...
+                    </span>
+                </span>
+
+            </div>
+
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
+                <!-- KV1 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+
+                        <div class="text-slate-700 text-xs font-bold flex items-center gap-2">
+
+                            <i class="fa-solid fa-location-crosshairs text-blue-600"></i>
+
+                            Khu vực 1
+
+                            <span id="count-driver-kv1"
+                                  class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                0 driver
+                            </span>
+
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+                            KV1
+                        </span>
+
+                    </div>
+
+
+                    <div id="driver-list-kv1"
+                         class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+
+                        <div class="text-xs text-slate-400 italic">
+                            Đang tải dữ liệu driver KV1...
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- KV2 -->
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+
+                        <div class="text-slate-700 text-xs font-bold flex items-center gap-2">
+
+                            <i class="fa-solid fa-location-crosshairs text-emerald-600"></i>
+
+                            Khu vực 2
+
+                            <span id="count-driver-kv2"
+                                  class="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                                0 driver
+                            </span>
+
+                        </div>
+
+                        <span class="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">
+                            KV2
+                        </span>
+
+                    </div>
+
+
+                    <div id="driver-list-kv2"
+                         class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+
+                        <div class="text-xs text-slate-400 italic">
+                            Đang tải dữ liệu driver KV2...
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- Footer -->
+        <div class="flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-400 pt-2 pb-4 gap-2 text-center sm:text-left">
+
+            <span class="flex items-center gap-1.5"
+                  id="api-status-text">
+
+                <i class="fa-solid fa-database"></i>
+                Đang kết nối FastAPI SSE Stream...
+
+            </span>
+
+            <span class="flex items-center gap-1.5">
+
+                <i class="fa-solid fa-rotate animate-spin"
+                   style="animation-duration: 4s;">
+                </i>
+
+                Đồng bộ Real-time tự động
+
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SHIPER
+    ====================================================== -->
+    <div id="content-shiper"
+         class="p-4 md:p-6 space-y-6 hidden">
+
+
+        <!-- Tab Delivery / Pickup -->
+        <div class="mb-4 flex flex-wrap gap-2">
+
+            <button id="tabDelivery"
+                    class="px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center">
+
+                <i class="fas fa-shipping-fast mr-2"></i>
+                Top Giao Hàng
+
+            </button>
+
+
+            <button id="tabPickup"
+                    class="px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center">
+
+                <i class="fas fa-box-open mr-2"></i>
+                Top Lấy Hàng
+
+            </button>
+
+        </div>
+
+
+        <!-- Title + Search -->
+        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+            <div>
+
+                <h2 class="text-lg font-medium text-gray-800 uppercase"
+                    id="tableTitle">
+
+                    TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT
+
+                </h2>
+
+                <p class="text-sm text-gray-500"
+                   id="tableSubtitle">
+
+                    Danh sách được sắp xếp từ cao xuống thấp.
+
+                </p>
+
+            </div>
+
+
+            <!-- Search -->
+            <div class="relative">
+
+                <input type="text"
+                       id="searchInput"
+                       placeholder="Tìm kiếm tài xế, ID, Khu vực..."
+                       class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
+
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             PERFORMANCE TABLE
+        ====================================================== -->
+        <div class="bg-white shadow-md rounded-xl overflow-hidden border border-gray-100">
+
+            <div class="overflow-x-auto">
+
+                <table class="min-w-full divide-y divide-gray-200">
+
+                    <!-- =========================
+                         TABLE HEADER
+                    ========================== -->
+                    <thead class="bg-gray-50">
+
+                        <tr>
+
+
+                            <!-- Khu vực -->
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                Khu Vực
+
+                            </th>
+
+
+                            <!-- Rider -->
+                            <th scope="col"
+                                class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="name">
+
+                                    Rider
+
+                                    <i class="fas fa-sort text-gray-400"></i>
+
+                                </button>
+
+                            </th>
+
+
+                            <!-- Ngày -->
+                            <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn mx-auto flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="days">
+
+                                    Số Ngày Làm
+
+                                    <i class="fas fa-sort text-gray-400"></i>
+
+                                </button>
+
+                            </th>
+
+
+                            <!-- Assigned -->
+                            <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn mx-auto flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="assigned">
+
+                                    <span id="colHeaderMetric">
+                                        Đơn Giao
+                                    </span>
+
+                                    <i class="fas fa-sort text-gray-400"></i>
+
+                                </button>
+
+                            </th>
+
+
+                            <!-- Success -->
+                            <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn mx-auto flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="success">
+
+                                    <span id="colHeaderSuccess">
+                                        Thành Công
+                                    </span>
+
+                                    <i class="fas fa-sort text-gray-400"></i>
+
+                                </button>
+
+                            </th>
+
+
+                            <!-- Onhold -->
+                            <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn mx-auto flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="onhold">
+
+                                    Tồn/Hold
+
+                                    <i class="fas fa-sort text-gray-400"></i>
+
+                                </button>
+
+                            </th>
+
+
+                            <!-- Rate -->
+                            <th scope="col"
+                                class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+
+                                <button type="button"
+                                        class="sort-btn mx-auto flex items-center gap-2 hover:text-blue-600 transition"
+                                        data-sort="rate">
+
+                                    Tỷ Lệ Thành Công
+
+                                    <i class="fas fa-sort-down text-blue-600"></i>
+
+                                </button>
+
+                            </th>
+
+
+                        </tr>
+
+                    </thead>
+
+
+                    <!-- TABLE BODY -->
+                    <tbody class="bg-white divide-y divide-gray-200"
+                           id="riderTableBody">
+
+
+                        <!-- Loading -->
+                        <tr id="loadingRiderRow">
+
+                            <td colspan="7"
+                                class="px-6 py-10 text-center text-sm text-gray-500">
+
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2 text-blue-500 block"></i>
+
+                                Đang tải dữ liệu hiệu suất driver...
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- No Data -->
+                        <tr id="noDataRow"
+                            style="display:none;">
+
+                            <td colspan="7"
+                                class="px-6 py-10 text-center text-sm text-gray-500">
+
+                                <i class="fas fa-box-open text-3xl mb-2 text-gray-400 block"></i>
+
+                                Không có dữ liệu hiệu suất.
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- Error -->
+                        <tr id="errorDataRow"
+                            style="display:none;">
+
+                            <td colspan="7"
+                                class="px-6 py-10 text-center text-sm text-rose-500">
+
+                                <i class="fas fa-triangle-exclamation text-3xl mb-2 block"></i>
+
+                                <span id="performanceErrorText">
+                                    Không thể tải dữ liệu hiệu suất.
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+
+                        <!-- No Result -->
+                        <tr id="noResultRow"
+                            style="display:none;">
+
+                            <td colspan="7"
+                                class="px-6 py-10 text-center text-sm text-gray-500">
+
+                                <i class="fas fa-search text-3xl mb-2 text-gray-400 block"></i>
+
+                                Không tìm thấy driver nào phù hợp với từ khóa tìm kiếm.
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+
+        <!-- Toggle -->
+        <div class="mt-6 flex justify-center">
+
+            <button id="toggleBtn"
+                    class="px-6 py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center justify-center">
+
+                <i class="fas fa-list mr-2"
+                   id="toggleIcon">
+                </i>
+
+                <span id="toggleText">
+                    Xem toàn bộ driver
+                </span>
+
+            </button>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+<script>
+
+// ============================================================
+// BIẾN TOÀN CỤC
+// ============================================================
+
+let performanceLoaded = false;
+let performanceLoading = false;
+let performanceData = [];
+
+let isShowingAll = false;
+
+let currentTab = 'delivery';
+
+// Sort mặc định:
+// Tỷ lệ thành công - giảm dần
+let currentSortField = 'rate';
+let currentSortDirection = 'desc';
+
+
+// ============================================================
+// CHUYỂN TAB DASHBOARD / SHIPER
+// ============================================================
+
+function switchTab(tabName) {
+
+    const navDashboard = document.getElementById('nav-dashboard');
+    const navShiper = document.getElementById('nav-shiper');
+
+    const contentDashboard =
+        document.getElementById('content-dashboard');
+
+    const contentShiper =
+        document.getElementById('content-shiper');
+
+
+    if (tabName === 'dashboard') {
+
+        navDashboard.className =
+            "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
+
+        navShiper.className =
+            "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
+
+        contentDashboard.classList.remove('hidden');
+        contentShiper.classList.add('hidden');
+
+    }
+
+    else if (tabName === 'shiper') {
+
+        navShiper.className =
+            "flex items-center justify-between px-3 py-2.5 rounded-lg bg-blue-50 text-blue-600 font-semibold transition";
+
+        navDashboard.className =
+            "flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition";
+
+        contentShiper.classList.remove('hidden');
+        contentDashboard.classList.add('hidden');
+
+        loadPerformanceData(false);
+    }
+
+}
+
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+
+function toggleSidebar() {
+
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    sidebar.classList.toggle('-translate-x-full');
+    overlay.classList.toggle('hidden');
+
+}
+
+
+// ============================================================
+// HTML ESCAPE
+// ============================================================
+
+function escapeHtml(value) {
+
+    return String(value ?? '').replace(
+        /[&<>'"]/g,
+        ch => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[ch])
+    );
+
+}
+
+
+// ============================================================
+// FORMAT NUMBER
+// ============================================================
+
+function formatNumber(value) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+        ? n.toLocaleString('vi-VN')
+        : '0';
+
+}
+
+
+// ============================================================
+// FORMAT RATE
+// ============================================================
+
+function formatRate(value) {
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+        ? `${n.toFixed(1)}%`
+        : '0.0%';
+
+}
+
+
+// ============================================================
+// GET RATE
+// ============================================================
+
+function getRate(rider) {
+
+    return currentTab === 'delivery'
+        ? Number(rider.raw_rate) || 0
+        : Number(rider.raw_pickup_rate) || 0;
+
+}
+
+
+// ============================================================
+// GET FIELD THEO TAB
+// ============================================================
+
+function getFieldForTab(rider, field) {
+
+    return currentTab === 'delivery'
+        ? (rider[field] ?? 0)
+        : (rider[`pickup_${field}`] ?? 0);
+
+}
+
+
+// ============================================================
+// BADGE SHIPER
+// ============================================================
+
+function updateShiperBadges(activeCount) {
+
+    const totalBadge =
+        document.getElementById('shiper-total-riders-badge');
+
+    const activeBadge =
+        document.getElementById('shiper-active-riders-badge');
+
+
+    if (totalBadge) {
+
+        totalBadge.innerText =
+            formatNumber(performanceData.length);
+
+    }
+
+
+    if (
+        activeBadge &&
+        activeCount !== undefined &&
+        activeCount !== null
+    ) {
+
+        activeBadge.innerText =
+            formatNumber(activeCount);
+
+    }
+
+}
+
+
+// ============================================================
+// GET SORT VALUE
+// ============================================================
+
+function getSortValue(rider, field) {
+
+    switch (field) {
+
+        case 'name':
+
+            return String(
+                rider.name || ''
+            ).toLowerCase();
+
+
+        case 'days':
+
+            return Number(
+                rider.days
+            ) || 0;
+
+
+        case 'assigned':
+
+            return Number(
+                getFieldForTab(rider, 'assigned')
+            ) || 0;
+
+
+        case 'success':
+
+            return Number(
+                getFieldForTab(rider, 'success')
+            ) || 0;
+
+
+        case 'onhold':
+
+            return Number(
+                getFieldForTab(rider, 'onhold')
+            ) || 0;
+
+
+        case 'rate':
+
+            return Number(
+                getRate(rider)
+            ) || 0;
+
+
+        default:
+
+            return 0;
+
+    }
+
+}
+
+
+// ============================================================
+// SORT DATA
+// ============================================================
+
+function sortPerformanceData(rows) {
+
+    return [...rows].sort((a, b) => {
+
+        const valueA =
+            getSortValue(a, currentSortField);
+
+        const valueB =
+            getSortValue(b, currentSortField);
+
+
+        // Sort chữ
+        if (
+            typeof valueA === 'string' &&
+            typeof valueB === 'string'
+        ) {
+
+            const result =
+                valueA.localeCompare(valueB, 'vi');
+
+            return currentSortDirection === 'asc'
+                ? result
+                : -result;
+
         }
 
-        async function loadPerformanceData(force = false) {
-            if (performanceLoaded && !force) return;
-            if (performanceLoading) return;
 
-            performanceLoading = true;
-            const loading = document.getElementById('loadingRiderRow');
-            const errorRow = document.getElementById('errorDataRow');
-            if (loading) loading.style.display = '';
-            if (errorRow) errorRow.style.display = 'none';
+        // Sort số
+        const result =
+            valueA - valueB;
 
-            try {
-                const res = await fetch('/api/performance');
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                const data = await res.json();
-                
-                performanceData = Array.isArray(data) ? data : (data.data || data.riders || []);
-                performanceLoaded = true;
-                updateShiperBadges();
-                renderPerformanceTable();
-            } catch (err) {
-                console.error('Lỗi khi tải dữ liệu hiệu suất driver:', err);
-                if (errorRow) {
-                    errorRow.style.display = '';
-                    const errText = document.getElementById('performanceErrorText');
-                    if (errText) errText.innerText = `Không thể tải dữ liệu hiệu suất (${err.message}).`;
+
+        return currentSortDirection === 'asc'
+            ? result
+            : -result;
+
+    });
+
+}
+
+
+// ============================================================
+// UPDATE ICON SORT
+// ============================================================
+
+function updateSortIcons() {
+
+    document
+        .querySelectorAll('.sort-btn')
+        .forEach(button => {
+
+            const icon =
+                button.querySelector('i');
+
+            const field =
+                button.dataset.sort;
+
+
+            if (!icon) return;
+
+
+            // Icon mặc định
+            icon.className =
+                'fas fa-sort text-gray-400';
+
+
+            // Cột đang sort
+            if (field === currentSortField) {
+
+                if (currentSortDirection === 'asc') {
+
+                    icon.className =
+                        'fas fa-sort-up text-blue-600';
+
                 }
-            } finally {
-                performanceLoading = false;
-                if (loading) loading.style.display = 'none';
-            }
-        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const tabDelivery = document.getElementById('tabDelivery');
-            const tabPickup = document.getElementById('tabPickup');
-            const tableTitle = document.getElementById('tableTitle');
-            const tableSubtitle = document.getElementById('tableSubtitle');
-            const colHeaderMetric = document.getElementById('colHeaderMetric');
-            const colHeaderSuccess = document.getElementById('colHeaderSuccess');
-            const searchInput = document.getElementById('searchInput');
-            const toggleBtn = document.getElementById('toggleBtn');
+                else {
 
-            if (tabDelivery && tabPickup) {
-                tabDelivery.addEventListener('click', () => {
-                    currentTab = 'delivery';
-                    tabDelivery.className = "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
-                    tabPickup.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
-                    if (tableTitle) tableTitle.innerText = "TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT";
-                    if (tableSubtitle) tableSubtitle.innerText = "Danh sách được sắp xếp từ cao xuống thấp theo tỷ lệ giao thành công.";
-                    if (colHeaderMetric) colHeaderMetric.innerHTML = `Đơn Giao <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i>`;
-                    if (colHeaderSuccess) colHeaderSuccess.innerHTML = `Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i>`;
-                    updateSortIcons();
-                    renderPerformanceTable();
-                });
+                    icon.className =
+                        'fas fa-sort-down text-blue-600';
 
-                tabPickup.addEventListener('click', () => {
-                    currentTab = 'pickup';
-                    tabPickup.className = "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
-                    tabDelivery.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
-                    if (tableTitle) tableTitle.innerText = "TOP 5 DRIVER CÓ TỶ LỆ LẤY HÀNG THÀNH CÔNG CAO NHẤT";
-                    if (tableSubtitle) tableSubtitle.innerText = "Danh sách được sắp xếp từ cao xuống thấp theo tỷ lệ lấy hàng thành công.";
-                    if (colHeaderMetric) colHeaderMetric.innerHTML = `Đơn Lấy <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i>`;
-                    if (colHeaderSuccess) colHeaderSuccess.innerHTML = `Lấy Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i>`;
-                    updateSortIcons();
-                    renderPerformanceTable();
-                });
+                }
+
             }
 
-            if (searchInput) {
-                searchInput.addEventListener('input', () => {
-                    renderPerformanceTable();
-                });
-            }
-
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    isShowingAll = !isShowingAll;
-                    const toggleText = document.getElementById('toggleText');
-                    const toggleIcon = document.getElementById('toggleIcon');
-                    if (isShowingAll) {
-                        if (toggleText) toggleText.innerText = "Thu gọn (Chỉ hiển thị Top 5)";
-                        if (toggleIcon) toggleIcon.className = "fas fa-compress mr-2";
-                    } else {
-                        if (toggleText) toggleText.innerText = "Xem toàn bộ driver";
-                        if (toggleIcon) toggleIcon.className = "fas fa-list mr-2";
-                    }
-                    renderPerformanceTable();
-                });
-            }
-
-            initSSE();
         });
 
-        function initSSE() {
-            const apiStatusText = document.getElementById('api-status-text');
-            if (!!window.EventSource) {
-                const source = new EventSource('/stream');
-                
-                source.onopen = function() {
-                    if (apiStatusText) {
-                        apiStatusText.innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[8px]"></i> Đã kết nối FastAPI SSE Stream`;
-                    }
-                };
+}
 
-                source.onmessage = function(event) {
-                    try {
-                        const data = JSON.parse(event.data);
-                        updateDashboardData(data);
-                    } catch (e) {
-                        console.error('Lỗi phân tích dữ liệu SSE:', e);
-                    }
-                };
 
-                source.onerror = function() {
-                    if (apiStatusText) {
-                        apiStatusText.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Mất kết nối SSE, đang thử kết nối lại...`;
+// ============================================================
+// RENDER PERFORMANCE TABLE
+// ============================================================
+
+function renderPerformanceTable() {
+
+    const tbody =
+        document.getElementById('riderTableBody');
+
+    const loading =
+        document.getElementById('loadingRiderRow');
+
+    const noData =
+        document.getElementById('noDataRow');
+
+    const error =
+        document.getElementById('errorDataRow');
+
+    const noResult =
+        document.getElementById('noResultRow');
+
+    const search =
+        document.getElementById('searchInput');
+
+
+    const term =
+        search
+            ? search.value.toLowerCase().trim()
+            : '';
+
+
+    loading.style.display = 'none';
+    noData.style.display = 'none';
+    error.style.display = 'none';
+
+
+    tbody
+        .querySelectorAll('.rider-row')
+        .forEach(row => row.remove());
+
+
+    // ========================================================
+    // SORT
+    // ========================================================
+
+    let rows =
+        sortPerformanceData(performanceData);
+
+
+    // ========================================================
+    // SEARCH
+    // ========================================================
+
+    if (term) {
+
+        rows = rows.filter(rider => {
+
+            const text =
+                `${rider.name || ''} 
+                 ${rider.id || ''} 
+                 ${rider.khu_vuc || ''}`
+                .toLowerCase();
+
+            return text.includes(term);
+
+        });
+
+    }
+
+
+    // ========================================================
+    // NO DATA
+    // ========================================================
+
+    if (!performanceData.length) {
+
+        noResult.style.display = 'none';
+        noData.style.display = '';
+
+        updateTitleAndSubtitle();
+
+        return;
+
+    }
+
+
+    // ========================================================
+    // NO RESULT
+    // ========================================================
+
+    if (!rows.length) {
+
+        noResult.style.display = '';
+
+        updateTitleAndSubtitle();
+
+        return;
+
+    }
+
+
+    noResult.style.display = 'none';
+
+
+    // ========================================================
+    // TOP 5 / ALL
+    // ========================================================
+
+    const visibleRows =
+        term || isShowingAll
+            ? rows
+            : rows.slice(0, 5);
+
+
+    // ========================================================
+    // RENDER
+    // ========================================================
+
+    visibleRows.forEach(rider => {
+
+        const khu =
+            rider.khu_vuc || 'Chưa xác định';
+
+
+        const khuClass =
+            khu === 'Khu vực 1'
+                ? 'bg-purple-100 text-purple-800'
+                : 'bg-indigo-100 text-indigo-800';
+
+
+        const tr =
+            document.createElement('tr');
+
+
+        tr.className =
+            'hover:bg-gray-50 transition-colors rider-row';
+
+
+        tr.innerHTML = `
+
+            <!-- Khu vực -->
+            <td class="px-6 py-4 whitespace-nowrap">
+
+                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${khuClass}">
+
+                    ${escapeHtml(khu)}
+
+                </span>
+
+            </td>
+
+
+            <!-- Rider -->
+            <td class="px-6 py-4 whitespace-nowrap">
+
+                <div class="text-sm font-medium text-gray-900">
+
+                    ${escapeHtml(
+                        rider.name || 'N/A'
+                    )}
+
+                </div>
+
+                <div class="text-xs text-gray-500">
+
+                    ID:
+                    ${escapeHtml(
+                        rider.id || ''
+                    )}
+
+                </div>
+
+            </td>
+
+
+            <!-- Days -->
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700">
+
+                ${formatNumber(rider.days)}
+
+            </td>
+
+
+            <!-- Assigned -->
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-700 font-medium">
+
+                ${formatNumber(
+                    getFieldForTab(
+                        rider,
+                        'assigned'
+                    )
+                )}
+
+            </td>
+
+
+            <!-- Success -->
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-green-600 font-semibold">
+
+                ${formatNumber(
+                    getFieldForTab(
+                        rider,
+                        'success'
+                    )
+                )}
+
+            </td>
+
+
+            <!-- Onhold -->
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-orange-500 font-medium">
+
+                ${formatNumber(
+                    getFieldForTab(
+                        rider,
+                        'onhold'
+                    )
+                )}
+
+            </td>
+
+
+            <!-- Rate -->
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+
+                <span class="px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+
+                    ${formatRate(
+                        getRate(rider)
+                    )}
+
+                </span>
+
+            </td>
+
+        `;
+
+
+        tbody.insertBefore(
+            tr,
+            noResult
+        );
+
+    });
+
+
+    updateTitleAndSubtitle();
+
+}
+
+
+// ============================================================
+// LOAD PERFORMANCE DATA
+// ============================================================
+
+async function loadPerformanceData(force = false) {
+
+    if (performanceLoading) return;
+
+
+    if (
+        performanceLoaded &&
+        !force
+    ) {
+
+        renderPerformanceTable();
+
+        return;
+
+    }
+
+
+    performanceLoading = true;
+
+
+    const tbody =
+        document.getElementById('riderTableBody');
+
+    const loading =
+        document.getElementById('loadingRiderRow');
+
+    const noData =
+        document.getElementById('noDataRow');
+
+    const error =
+        document.getElementById('errorDataRow');
+
+    const noResult =
+        document.getElementById('noResultRow');
+
+
+    loading.style.display = '';
+    noData.style.display = 'none';
+    error.style.display = 'none';
+    noResult.style.display = 'none';
+
+
+    tbody
+        .querySelectorAll('.rider-row')
+        .forEach(row => row.remove());
+
+
+    try {
+
+        const response =
+            await fetch(
+                '/api/performance?force=' +
+                (force ? '1' : '0'),
+                {
+                    cache: 'no-store',
+                    headers: {
+                        'Accept':
+                            'application/json'
                     }
-                };
-            } else {
-                if (apiStatusText) {
-                    apiStatusText.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500"></i> Trình duyệt không hỗ trợ SSE`;
                 }
-            }
+            );
+
+
+        const result =
+            await response
+                .json()
+                .catch(() => ({}));
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.detail ||
+                `HTTP ${response.status}`
+            );
+
         }
 
-        function updateDashboardData(data) {
-            if (!data) return;
 
-            if (data.kv1) {
-                if (data.kv1.total_orders !== undefined) document.getElementById('total-orders-kv1').innerText = formatNumber(data.kv1.total_orders);
-                if (data.kv1.inventory !== undefined) document.getElementById('total-inventory-kv1').innerText = formatNumber(data.kv1.inventory);
-                if (data.kv1.attempted !== undefined) document.getElementById('total-inventory-attempted-kv1').innerText = formatNumber(data.kv1.attempted);
-                if (data.kv1.warehouse !== undefined) document.getElementById('forecast-warehouse-kv1').innerText = formatNumber(data.kv1.warehouse);
-                if (data.kv1.pickup !== undefined) document.getElementById('forecast-pickup-kv1').innerText = formatNumber(data.kv1.pickup);
+        performanceData =
+            Array.isArray(result.riders)
+                ? result.riders
+                : [];
+
+
+        performanceLoaded = true;
+
+
+        renderPerformanceTable();
+
+        updateShiperBadges();
+
+
+    }
+
+    catch (err) {
+
+        console.error(
+            'Lỗi tải /api/performance:',
+            err
+        );
+
+
+        loading.style.display = 'none';
+
+        error.style.display = '';
+
+
+        document
+            .getElementById(
+                'performanceErrorText'
+            )
+            .innerText =
+                'Không thể tải dữ liệu hiệu suất: ' +
+                err.message;
+
+    }
+
+    finally {
+
+        performanceLoading = false;
+
+    }
+
+}
+
+
+// ============================================================
+// TITLE
+// ============================================================
+
+function updateTitleAndSubtitle() {
+
+    const title =
+        document.getElementById('tableTitle');
+
+    const subtitle =
+        document.getElementById('tableSubtitle');
+
+
+    if (isShowingAll) {
+
+        title.innerText =
+            currentTab === 'delivery'
+                ? 'DANH SÁCH TOÀN BỘ DRIVER - GIAO HÀNG'
+                : 'DANH SÁCH TOÀN BỘ DRIVER - LẤY HÀNG';
+
+
+        subtitle.innerText =
+            'Hiển thị toàn bộ danh sách tài xế trong hệ thống.';
+
+    }
+
+    else {
+
+        title.innerText =
+            currentTab === 'delivery'
+                ? 'TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT'
+                : 'TOP 5 DRIVER CÓ TỶ LỆ LẤY THÀNH CÔNG CAO NHẤT';
+
+
+        subtitle.innerText =
+            'Danh sách được sắp xếp theo tiêu chí đang chọn.';
+
+    }
+
+}
+
+
+// ============================================================
+// TAB DELIVERY
+// ============================================================
+
+document
+    .getElementById('tabDelivery')
+    .addEventListener('click', () => {
+
+        currentTab = 'delivery';
+
+
+        document.getElementById(
+            'tabDelivery'
+        ).className =
+            "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
+
+
+        document.getElementById(
+            'tabPickup'
+        ).className =
+            "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
+
+
+        document.getElementById(
+            'colHeaderMetric'
+        ).innerText =
+            'Đơn Giao';
+
+
+        document.getElementById(
+            'colHeaderSuccess'
+        ).innerText =
+            'Thành Công';
+
+
+        renderPerformanceTable();
+
+    });
+
+
+// ============================================================
+// TAB PICKUP
+// ============================================================
+
+document
+    .getElementById('tabPickup')
+    .addEventListener('click', () => {
+
+        currentTab = 'pickup';
+
+
+        document.getElementById(
+            'tabPickup'
+        ).className =
+            "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
+
+
+        document.getElementById(
+            'tabDelivery'
+        ).className =
+            "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
+
+
+        document.getElementById(
+            'colHeaderMetric'
+        ).innerText =
+            'Đơn Lấy';
+
+
+        document.getElementById(
+            'colHeaderSuccess'
+        ).innerText =
+            'Lấy Thành Công';
+
+
+        renderPerformanceTable();
+
+    });
+
+
+// ============================================================
+// SORT BUTTONS
+// ============================================================
+
+document
+    .querySelectorAll('.sort-btn')
+    .forEach(button => {
+
+        button.addEventListener(
+            'click',
+            function () {
+
+                const field =
+                    this.dataset.sort;
+
+
+                // Nếu bấm lại cùng cột
+                if (
+                    currentSortField === field
+                ) {
+
+                    currentSortDirection =
+                        currentSortDirection === 'asc'
+                            ? 'desc'
+                            : 'asc';
+
+                }
+
+                // Nếu chuyển sang cột khác
+                else {
+
+                    currentSortField = field;
+
+                    // Mặc định cột mới:
+                    // giảm dần
+                    currentSortDirection = 'desc';
+
+                }
+
+
+                updateSortIcons();
+
+                renderPerformanceTable();
+
             }
-            if (data.kv2) {
-                if (data.kv2.total_orders !== undefined) document.getElementById('total-orders-kv2').innerText = formatNumber(data.kv2.total_orders);
-                if (data.kv2.inventory !== undefined) document.getElementById('total-inventory-kv2').innerText = formatNumber(data.kv2.inventory);
-                if (data.kv2.attempted !== undefined) document.getElementById('total-inventory-attempted-kv2').innerText = formatNumber(data.kv2.attempted);
-                if (data.kv2.warehouse !== undefined) document.getElementById('forecast-warehouse-kv2').innerText = formatNumber(data.kv2.warehouse);
-                if (data.kv2.pickup !== undefined) document.getElementById('forecast-pickup-kv2').innerText = formatNumber(data.kv2.pickup);
-            }
+        );
+
+    });
+
+
+// ============================================================
+// TOGGLE TOP 5 / TOÀN BỘ
+// ============================================================
+
+document
+    .getElementById('toggleBtn')
+    .addEventListener(
+        'click',
+        function () {
+
+            isShowingAll =
+                !isShowingAll;
+
+
+            document.getElementById(
+                'searchInput'
+            ).value = '';
+
+
+            document.getElementById(
+                'toggleText'
+            ).innerText =
+                isShowingAll
+                    ? 'Thu gọn Top 5'
+                    : 'Xem toàn bộ driver';
+
+
+            document.getElementById(
+                'toggleIcon'
+            ).className =
+                isShowingAll
+                    ? 'fas fa-chevron-up mr-2'
+                    : 'fas fa-list mr-2';
+
+
+            this.classList.toggle(
+                'bg-gray-700',
+                isShowingAll
+            );
+
+
+            this.classList.toggle(
+                'bg-gray-800',
+                !isShowingAll
+            );
+
+
+            renderPerformanceTable();
+
         }
-    </script>
+    );
+
+
+// ============================================================
+// SEARCH
+// ============================================================
+
+document
+    .getElementById('searchInput')
+    .addEventListener(
+        'input',
+        renderPerformanceTable
+    );
+
+
+// ============================================================
+// REFRESH BUTTON
+// ============================================================
+
+const shiperHeader =
+    document
+        .getElementById('content-shiper')
+        .querySelector('.mb-6');
+
+
+const refreshBtn =
+    document.createElement('button');
+
+
+refreshBtn.type = 'button';
+
+
+refreshBtn.className =
+    'px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg shadow flex items-center gap-2';
+
+
+refreshBtn.innerHTML =
+    '<i class="fas fa-sync-alt"></i> Làm mới';
+
+
+refreshBtn.addEventListener(
+    'click',
+    () => loadPerformanceData(true)
+);
+
+
+shiperHeader.appendChild(
+    refreshBtn
+);
+
+
+// ============================================================
+// DRIVER ACTIVE LIST
+// ============================================================
+
+function renderDriverList(
+    drivers,
+    containerId,
+    countId,
+    iconColorClass
+) {
+
+    const container =
+        document.getElementById(
+            containerId
+        );
+
+
+    if (
+        !drivers ||
+        drivers.length === 0
+    ) {
+
+        container.innerHTML =
+            '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
+
+
+        document.getElementById(
+            countId
+        ).innerText =
+            '0 driver';
+
+
+        return;
+
+    }
+
+
+    const sortedDrivers =
+        [...drivers].sort(
+            (a, b) =>
+                b.dang_giao -
+                a.dang_giao
+        );
+
+
+    container.innerHTML =
+        sortedDrivers
+            .map((d, index) => {
+
+                let rankBadgeClass =
+                    "bg-slate-100 text-slate-600";
+
+
+                if (index === 0)
+
+                    rankBadgeClass =
+                        "bg-amber-100 text-amber-700 font-bold";
+
+
+                else if (index === 1)
+
+                    rankBadgeClass =
+                        "bg-slate-200 text-slate-700 font-bold";
+
+
+                else if (index === 2)
+
+                    rankBadgeClass =
+                        "bg-orange-100 text-orange-700 font-bold";
+
+
+                return `
+
+                    <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs space-y-1.5">
+
+                        <div class="flex justify-between font-semibold text-slate-800 items-center">
+
+                            <span class="flex items-center gap-1.5">
+
+                                <span class="w-5 h-5 flex items-center justify-center text-[10px] rounded-full ${rankBadgeClass}">
+
+                                    #${index + 1}
+
+                                </span>
+
+                                <span>
+
+                                    <i class="fa-solid fa-user-shield ${iconColorClass} mr-1"></i>
+
+                                    Tên:
+                                    ${escapeHtml(d.ten)}
+
+                                </span>
+
+                            </span>
+
+
+                            <span class="text-slate-500 font-mono text-[11px]">
+
+                                ID:
+                                ${escapeHtml(d.id)}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60">
+
+                            <div>
+                                Đang giao:
+                                <strong class="text-blue-600">
+                                    ${formatNumber(d.dang_giao)}
+                                </strong>
+                            </div>
+
+                            <div>
+                                Onhold:
+                                <strong class="text-amber-600">
+                                    ${formatNumber(d.onhold)}
+                                </strong>
+                            </div>
+
+                            <div>
+                                Thành công:
+                                <strong class="text-emerald-600">
+                                    ${formatNumber(d.thanh_cong)}
+                                </strong>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                `;
+
+            })
+            .join('');
+
+
+    document.getElementById(
+        countId
+    ).innerText =
+        `${drivers.length} driver`;
+
+}
+
+
+// ============================================================
+// UPDATE DASHBOARD
+// ============================================================
+
+function updateDashboardUI(
+    data,
+    isFromCache = false
+) {
+
+
+    // --------------------------------------------------------
+    // ORDERS
+    // --------------------------------------------------------
+
+    if (
+        data.tong_don_giao_kv1 !== undefined
+    ) {
+
+        document.getElementById(
+            'total-orders-kv1'
+        ).innerText =
+            Number(
+                data.tong_don_giao_kv1
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'total-orders-kv2'
+        ).innerText =
+            Number(
+                data.tong_don_giao_kv2
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'group-total-orders'
+        ).innerText =
+            (
+                Number(
+                    data.tong_don_giao_kv1
+                ) +
+                Number(
+                    data.tong_don_giao_kv2
+                )
+            ).toLocaleString('vi-VN');
+
+    }
+
+
+    // --------------------------------------------------------
+    // INVENTORY CHƯA ATTEM
+    // --------------------------------------------------------
+
+    if (
+        data.tong_don_ton_kho_chua_attem_kv1 !== undefined
+    ) {
+
+        document.getElementById(
+            'total-inventory-kv1'
+        ).innerText =
+            Number(
+                data.tong_don_ton_kho_chua_attem_kv1
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'total-inventory-kv2'
+        ).innerText =
+            Number(
+                data.tong_don_ton_kho_chua_attem_kv2
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'group-total-inventory'
+        ).innerText =
+            (
+                Number(
+                    data.tong_don_ton_kho_chua_attem_kv1
+                ) +
+                Number(
+                    data.tong_don_ton_kho_chua_attem_kv2
+                )
+            ).toLocaleString('vi-VN');
+
+    }
+
+
+    // --------------------------------------------------------
+    // INVENTORY ĐÃ ATTEM
+    // --------------------------------------------------------
+
+    if (
+        data.tong_don_ton_kho_da_attem_kv1 !== undefined
+    ) {
+
+        document.getElementById(
+            'total-inventory-attempted-kv1'
+        ).innerText =
+            Number(
+                data.tong_don_ton_kho_da_attem_kv1
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'total-inventory-attempted-kv2'
+        ).innerText =
+            Number(
+                data.tong_don_ton_kho_da_attem_kv2
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'group-total-attempted'
+        ).innerText =
+            (
+                Number(
+                    data.tong_don_ton_kho_da_attem_kv1
+                ) +
+                Number(
+                    data.tong_don_ton_kho_da_attem_kv2
+                )
+            ).toLocaleString('vi-VN');
+
+    }
+
+
+    // --------------------------------------------------------
+    // WAREHOUSE
+    // --------------------------------------------------------
+
+    if (
+        data.du_bao_warehouse_kv1 !== undefined
+    ) {
+
+        document.getElementById(
+            'forecast-warehouse-kv1'
+        ).innerText =
+            Number(
+                data.du_bao_warehouse_kv1
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'forecast-warehouse-kv2'
+        ).innerText =
+            Number(
+                data.du_bao_warehouse_kv2
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'group-total-warehouse'
+        ).innerText =
+            (
+                Number(
+                    data.du_bao_warehouse_kv1
+                ) +
+                Number(
+                    data.du_bao_warehouse_kv2
+                )
+            ).toLocaleString('vi-VN');
+
+    }
+
+
+    // --------------------------------------------------------
+    // PICKUP
+    // --------------------------------------------------------
+
+    if (
+        data.du_bao_pickup_kv1 !== undefined
+    ) {
+
+        document.getElementById(
+            'forecast-pickup-kv1'
+        ).innerText =
+            Number(
+                data.du_bao_pickup_kv1
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'forecast-pickup-kv2'
+        ).innerText =
+            Number(
+                data.du_bao_pickup_kv2
+            ).toLocaleString('vi-VN');
+
+
+        document.getElementById(
+            'group-total-pickup'
+        ).innerText =
+            (
+                Number(
+                    data.du_bao_pickup_kv1
+                ) +
+                Number(
+                    data.du_bao_pickup_kv2
+                )
+            ).toLocaleString('vi-VN');
+
+    }
+
+
+    // --------------------------------------------------------
+    // DRIVER KV1
+    // --------------------------------------------------------
+
+    if (data.drivers_detail_kv1) {
+
+        renderDriverList(
+            data.drivers_detail_kv1,
+            'driver-list-kv1',
+            'count-driver-kv1',
+            'text-blue-500'
+        );
+
+    }
+
+
+    // --------------------------------------------------------
+    // DRIVER KV2
+    // --------------------------------------------------------
+
+    if (data.drivers_detail_kv2) {
+
+        renderDriverList(
+            data.drivers_detail_kv2,
+            'driver-list-kv2',
+            'count-driver-kv2',
+            'text-emerald-500'
+        );
+
+    }
+
+
+    // --------------------------------------------------------
+    // TOTAL DRIVER
+    // --------------------------------------------------------
+
+    const totalDriversCount =
+        (
+            data.drivers_detail_kv1
+                ? data.drivers_detail_kv1.length
+                : 0
+        ) +
+
+        (
+            data.drivers_detail_kv2
+                ? data.drivers_detail_kv2.length
+                : 0
+        );
+
+
+    document.getElementById(
+        'group-total-drivers'
+    ).innerText =
+        totalDriversCount.toLocaleString('vi-VN');
+
+
+    updateShiperBadges(
+        totalDriversCount
+    );
+
+
+    // --------------------------------------------------------
+    // HUB
+    // --------------------------------------------------------
+
+    if (data.ten_hub) {
+
+        document.getElementById(
+            'hub-title'
+        ).innerText =
+            "Tổng quan - " +
+            data.ten_hub;
+
+
+        document.getElementById(
+            'hub-location-name'
+        ).innerText =
+            data.ten_hub;
+
+    }
+
+
+    // --------------------------------------------------------
+    // API STATUS
+    // --------------------------------------------------------
+
+    if (
+        data.trang_thai_api &&
+        !isFromCache
+    ) {
+
+        document.getElementById(
+            'api-status-text'
+        ).innerHTML =
+            `<i class="fa-solid fa-circle-check text-emerald-500"></i> ${escapeHtml(data.trang_thai_api)}`;
+
+    }
+
+
+    // --------------------------------------------------------
+    // TIME
+    // --------------------------------------------------------
+
+    const timeString =
+        isFromCache
+            ? "Đang đồng bộ..."
+            : (
+                data.thoi_gian_cap_nhat ||
+                new Date().toLocaleTimeString('vi-VN')
+            );
+
+
+    const timeIds = [
+
+        'update-time-kv1',
+        'update-time-kv2',
+
+        'inventory-time-kv1',
+        'inventory-time-kv2',
+
+        'attempted-time-kv1',
+        'attempted-time-kv2',
+
+        'warehouse-time-kv1',
+        'warehouse-time-kv2',
+
+        'pickup-time-kv1',
+        'pickup-time-kv2'
+
+    ];
+
+
+    timeIds.forEach(id => {
+
+        const el =
+            document.getElementById(id);
+
+        if (el) {
+
+            el.innerText =
+                timeString;
+
+        }
+
+    });
+
+
+    // --------------------------------------------------------
+    // CACHE
+    // --------------------------------------------------------
+
+    if (!isFromCache) {
+
+        localStorage.setItem(
+            'spx_cached_dashboard_data',
+            JSON.stringify(data)
+        );
+
+    }
+
+}
+
+
+// ============================================================
+// SSE
+// ============================================================
+
+function connectSSE() {
+
+    const eventSource =
+        new EventSource('/api/stream');
+
+
+    eventSource.addEventListener(
+        'update',
+        function (event) {
+
+            try {
+
+                const data =
+                    JSON.parse(
+                        event.data
+                    );
+
+
+                updateDashboardUI(
+                    data,
+                    false
+                );
+
+            }
+
+            catch (e) {
+
+                console.error(
+                    "Lỗi parse dữ liệu SSE:",
+                    e
+                );
+
+            }
+
+        }
+    );
+
+
+    eventSource.onerror = function () {
+
+        document.getElementById(
+            'api-status-text'
+        ).innerHTML =
+            `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
+
+
+        eventSource.close();
+
+
+        setTimeout(
+            connectSSE,
+            5000
+        );
+
+    };
+
+}
+
+
+// ============================================================
+// DOM READY
+// ============================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    () => {
+
+
+        // ----------------------------------------------------
+        // CACHE
+        // ----------------------------------------------------
+
+        const cachedString =
+            localStorage.getItem(
+                'spx_cached_dashboard_data'
+            );
+
+
+        if (cachedString) {
+
+            try {
+
+                const cachedData =
+                    JSON.parse(
+                        cachedString
+                    );
+
+
+                updateDashboardUI(
+                    cachedData,
+                    true
+                );
+
+
+                document.getElementById(
+                    'api-status-text'
+                ).innerHTML =
+                    '<i class="fa-solid fa-bolt text-amber-500"></i> Đã hiển thị dữ liệu lưu trữ, đang đồng bộ trực tiếp...';
+
+            }
+
+            catch (e) {
+
+                console.error(
+                    'Lỗi đọc cache LocalStorage:',
+                    e
+                );
+
+            }
+
+        }
+
+
+        // ----------------------------------------------------
+        // SORT ICON INIT
+        // ----------------------------------------------------
+
+        updateSortIcons();
+
+
+        // ----------------------------------------------------
+        // SSE
+        // ----------------------------------------------------
+
+        connectSSE();
+
+
+        // ----------------------------------------------------
+        // PERFORMANCE
+        // ----------------------------------------------------
+
+        loadPerformanceData(false);
+
+    }
+);
+
+</script>
+
 </body>
 </html>
+```
