@@ -1375,6 +1375,12 @@ function getSortValue(rider, field) {
             return String(
                 rider.id || ''
             ).toLowerCase();
+            
+        case 'name':
+
+            return String(
+                rider.name || ''
+            ).toLowerCase();
 
 
         case 'days':
