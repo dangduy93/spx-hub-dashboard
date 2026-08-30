@@ -356,18 +356,8 @@
                                         <i id="sort-icon-days" class="fas fa-sort text-gray-400"></i>
                                     </div>
                                 </th>
-                                <th scope="col" onclick="sortData('metric')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderMetric">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span>Đơn Giao</span>
-                                        <i id="sort-icon-metric" class="fas fa-sort text-gray-400"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" onclick="sortData('success')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderSuccess">
-                                    <div class="flex items-center justify-center gap-1">
-                                        <span>Thành Công</span>
-                                        <i id="sort-icon-success" class="fas fa-sort text-gray-400"></i>
-                                    </div>
-                                </th>
+                                <th scope="col" onclick="sortData('metric')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderMetric">Đơn Giao <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i></th>
+                                <th scope="col" onclick="sortData('success')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none" id="colHeaderSuccess">Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i></th>
                                 <th scope="col" onclick="sortData('hold')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
                                     <div class="flex items-center justify-center gap-1">
                                         <span>Tồn/Hold</span>
@@ -377,7 +367,7 @@
                                 <th scope="col" onclick="sortData('rate')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
                                     <div class="flex items-center justify-center gap-1">
                                         <span>Tỷ Lệ Thành Công</span>
-                                        <i id="sort-icon-rate" class="fas fa-sort text-blue-600"></i>
+                                        <i id="sort-icon-rate" class="fas fa-sort-down text-blue-600"></i>
                                     </div>
                                 </th>
                             </tr>
@@ -505,9 +495,9 @@
                 const icon = document.getElementById(`sort-icon-${col}`);
                 if (!icon) return;
                 if (col === currentSortColumn) {
-                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up text-blue-600' : 'fas fa-sort-down text-blue-600';
+                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up text-blue-600 ml-1' : 'fas fa-sort-down text-blue-600 ml-1';
                 } else {
-                    icon.className = 'fas fa-sort text-gray-400';
+                    icon.className = 'fas fa-sort text-gray-400 ml-1';
                 }
             });
         }
@@ -683,8 +673,9 @@
                     tabPickup.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
                     if (tableTitle) tableTitle.innerText = "TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT";
                     if (tableSubtitle) tableSubtitle.innerText = "Danh sách được sắp xếp từ cao xuống thấp theo tỷ lệ giao thành công.";
-                    if (colHeaderMetric) colHeaderMetric.querySelector('span').innerText = "Đơn Giao";
-                    if (colHeaderSuccess) colHeaderSuccess.querySelector('span').innerText = "Thành Công";
+                    if (colHeaderMetric) colHeaderMetric.innerHTML = `Đơn Giao <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i>`;
+                    if (colHeaderSuccess) colHeaderSuccess.innerHTML = `Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i>`;
+                    updateSortIcons();
                     renderPerformanceTable();
                 });
 
@@ -694,8 +685,9 @@
                     tabDelivery.className = "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
                     if (tableTitle) tableTitle.innerText = "TOP 5 DRIVER CÓ TỶ LỆ LẤY HÀNG THÀNH CÔNG CAO NHẤT";
                     if (tableSubtitle) tableSubtitle.innerText = "Danh sách được sắp xếp từ cao xuống thấp theo tỷ lệ lấy hàng thành công.";
-                    if (colHeaderMetric) colHeaderMetric.querySelector('span').innerText = "Đơn Lấy";
-                    if (colHeaderSuccess) colHeaderSuccess.querySelector('span').innerText = "Lấy Thành Công";
+                    if (colHeaderMetric) colHeaderMetric.innerHTML = `Đơn Lấy <i id="sort-icon-metric" class="fas fa-sort text-gray-400 ml-1"></i>`;
+                    if (colHeaderSuccess) colHeaderSuccess.innerHTML = `Lấy Thành Công <i id="sort-icon-success" class="fas fa-sort text-gray-400 ml-1"></i>`;
+                    updateSortIcons();
                     renderPerformanceTable();
                 });
             }
