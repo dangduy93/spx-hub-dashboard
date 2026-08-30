@@ -377,7 +377,7 @@
                                 <th scope="col" onclick="sortData('rate')" class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition select-none">
                                     <div class="flex items-center justify-center gap-1">
                                         <span>Tỷ Lệ Thành Công</span>
-                                        <i id="sort-icon-rate" class="fas fa-sort text-gray-400"></i>
+                                        <i id="sort-icon-rate" class="fas fa-sort text-blue-600"></i>
                                     </div>
                                 </th>
                             </tr>
@@ -423,16 +423,15 @@
     </main>
 
     <script>
-        // Shiper lấy dữ liệu động từ /api/performance. Không dùng Jinja trong index.html.
         let performanceLoaded = false;
         let performanceLoading = false;
         let performanceData = [];
         let isShowingAll = false;
         let currentTab = 'delivery';
 
-        // Biến trạng thái sắp xếp cột
-        let currentSortColumn = 'rate'; // Mặc định sắp xếp theo tỷ lệ thành công
-        let currentSortDirection = 'desc'; // 'asc' (tăng) hoặc 'desc' (giảm)
+        // Trạng thái sắp xếp cột
+        let currentSortColumn = 'rate'; 
+        let currentSortDirection = 'desc';
 
         function switchTab(tabName) {
             const navDashboard = document.getElementById('nav-dashboard');
@@ -488,7 +487,7 @@
             return currentTab === 'delivery' ? (rider[field] ?? 0) : (rider[`pickup_${field}`] ?? 0);
         }
 
-        // Hàm xử lý khi bấm vào tiêu đề cột để sắp xếp
+        // Hàm xử lý khi bấm vào tiêu đề để sắp xếp
         function sortData(column) {
             if (currentSortColumn === column) {
                 currentSortDirection = currentSortDirection === 'desc' ? 'asc' : 'desc';
@@ -500,7 +499,6 @@
             renderPerformanceTable();
         }
 
-        // Cập nhật biểu tượng mũi tên sắp xếp trên header
         function updateSortIcons() {
             const columns = ['name', 'days', 'metric', 'success', 'hold', 'rate'];
             columns.forEach(col => {
@@ -537,7 +535,7 @@
                 return;
             }
 
-            // Sắp xếp dữ liệu theo cột và chiều đang chọn
+            // Sắp xếp dữ liệu đa cột tăng/giảm tùy chọn
             const sortedData = [...performanceData].sort((a, b) => {
                 let valA, valB;
 
@@ -572,7 +570,6 @@
                 return currentSortDirection === 'asc' ? valA - valB : valB - valA;
             });
 
-            // Lọc theo từ khóa tìm kiếm
             const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
             const filteredData = sortedData.filter(rider => {
                 if (!searchQuery) return true;
@@ -587,7 +584,6 @@
                 return;
             }
 
-            // Giới hạn hiển thị Top 5 nếu chưa bật chế độ xem toàn bộ
             const displayData = isShowingAll ? filteredData : filteredData.slice(0, 5);
 
             displayData.forEach((rider, index) => {
@@ -605,11 +601,11 @@
                 const rateVal = formatRate(getRate(rider));
 
                 let rankBadge = `<span class="text-xs font-semibold text-gray-500 w-6 text-inline-block">#${index + 1}</span>`;
-                if (index === 0 && !searchQuery) {
+                if (index === 0 && !searchQuery && !isShowingAll) {
                     rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-700 text-xs font-bold"><i class="fas fa-crown text-[10px]"></i></span>`;
-                } else if (index === 1 && !searchQuery) {
+                } else if (index === 1 && !searchQuery && !isShowingAll) {
                     rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">2</span>`;
-                } else if (index === 2 && !searchQuery) {
+                } else if (index === 2 && !searchQuery && !isShowingAll) {
                     rankBadge = `<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-800 text-xs font-bold">3</span>`;
                 }
 
