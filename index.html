@@ -423,41 +423,16 @@
     </main>
 
     <script>
+        // Shiper lấy dữ liệu động từ /api/performance. Không dùng Jinja trong index.html.
         let performanceLoaded = false;
         let performanceLoading = false;
         let performanceData = [];
         let isShowingAll = false;
         let currentTab = 'delivery';
 
-        // Trạng thái sắp xếp cột
+        // Biến trạng thái sắp xếp cột
         let currentSortColumn = 'rate'; // Mặc định sắp xếp theo tỷ lệ thành công
         let currentSortDirection = 'desc'; // 'asc' (tăng) hoặc 'desc' (giảm)
-
-        // Hàm xử lý khi bấm vào tiêu đề cột để sắp xếp
-        function sortData(column) {
-            if (currentSortColumn === column) {
-                currentSortDirection = currentSortDirection === 'desc' ? 'asc' : 'desc';
-            } else {
-                currentSortColumn = column;
-                currentSortDirection = (column === 'name') ? 'asc' : 'desc';
-            }
-            updateSortIcons();
-            renderPerformanceTable();
-        }
-
-        // Cập nhật hiển thị icon mũi tên trên tiêu đề cột
-        function updateSortIcons() {
-            const columns = ['name', 'days', 'metric', 'success', 'hold', 'rate'];
-            columns.forEach(col => {
-                const icon = document.getElementById(`sort-icon-${col}`);
-                if (!icon) return;
-                if (col === currentSortColumn) {
-                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up text-blue-600' : 'fas fa-sort-down text-blue-600';
-                } else {
-                    icon.className = 'fas fa-sort text-gray-400';
-                }
-            });
-        }
 
         function switchTab(tabName) {
             const navDashboard = document.getElementById('nav-dashboard');
@@ -513,6 +488,32 @@
             return currentTab === 'delivery' ? (rider[field] ?? 0) : (rider[`pickup_${field}`] ?? 0);
         }
 
+        // Hàm xử lý khi bấm vào tiêu đề cột để sắp xếp
+        function sortData(column) {
+            if (currentSortColumn === column) {
+                currentSortDirection = currentSortDirection === 'desc' ? 'asc' : 'desc';
+            } else {
+                currentSortColumn = column;
+                currentSortDirection = (column === 'name') ? 'asc' : 'desc';
+            }
+            updateSortIcons();
+            renderPerformanceTable();
+        }
+
+        // Cập nhật biểu tượng mũi tên sắp xếp trên header
+        function updateSortIcons() {
+            const columns = ['name', 'days', 'metric', 'success', 'hold', 'rate'];
+            columns.forEach(col => {
+                const icon = document.getElementById(`sort-icon-${col}`);
+                if (!icon) return;
+                if (col === currentSortColumn) {
+                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up text-blue-600' : 'fas fa-sort-down text-blue-600';
+                } else {
+                    icon.className = 'fas fa-sort text-gray-400';
+                }
+            });
+        }
+
         function renderPerformanceTable() {
             const tbody = document.getElementById('riderTableBody');
             const loading = document.getElementById('loadingRiderRow');
@@ -536,7 +537,7 @@
                 return;
             }
 
-            // Sắp xếp dữ liệu theo cấu hình cột và chiều đã chọn
+            // Sắp xếp dữ liệu theo cột và chiều đang chọn
             const sortedData = [...performanceData].sort((a, b) => {
                 let valA, valB;
 
@@ -571,6 +572,7 @@
                 return currentSortDirection === 'asc' ? valA - valB : valB - valA;
             });
 
+            // Lọc theo từ khóa tìm kiếm
             const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
             const filteredData = sortedData.filter(rider => {
                 if (!searchQuery) return true;
@@ -585,6 +587,7 @@
                 return;
             }
 
+            // Giới hạn hiển thị Top 5 nếu chưa bật chế độ xem toàn bộ
             const displayData = isShowingAll ? filteredData : filteredData.slice(0, 5);
 
             displayData.forEach((rider, index) => {
