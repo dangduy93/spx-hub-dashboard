@@ -107,10 +107,8 @@ cache_store = {
     "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ),
 }
 
-performance_cache = {
-    "data": None,
-    "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ),
-}
+# Thay đổi performance_cache thành dạng dictionary lưu theo từng tháng (key dạng "YYYY-MM")
+performance_caches = {}
 PERFORMANCE_CACHE_SECONDS = int(os.getenv("PERFORMANCE_CACHE_SECONDS", "300"))
 
 
@@ -157,12 +155,10 @@ def parse_rate(success_rate):
   return raw_rate, f"{raw_rate:.1f}%"
 
 
-async def fetch_report_data(client, api_url, function_type):
+async def fetch_report_data(client, api_url, function_type, start_date_str):
   all_data_list = []
   pageno = 1
   page_count = 200  # Tăng số lượng item mỗi trang lên để lấy nhanh và đủ hơn
-  now = datetime.now(VIETNAM_TZ)
-  start_date_str = now.strftime("%Y-%m")
 
   while True:
     payload = {
@@ -207,27 +203,45 @@ async def fetch_report_data(client, api_url, function_type):
       logger.error(f"Lỗi khi gọi API Report {api_url} trang {pageno}: {e}")
       break
       
-  logger.info(f"Đã load toàn bộ từ API {api_url}: tổng số bản ghi = {len(all_data_list)}")
+  logger.info(f"Đã load toàn bộ từ API {api_url} (Tháng {start_date_str}): tổng số bản ghi = {len(all_data_list)}")
   return all_data_list
 
-async def get_drivers_performance_data(force_refresh: bool = False):
-  """Lấy report hiệu suất giao/lấy và cache để Render không gọi SPX liên tục."""
+async def get_drivers_performance_data(month_param: int = None, force_refresh: bool = False):
+  """Lấy report hiệu suất giao/lấy theo tháng được chọn và cache theo từng tháng."""
   now = datetime.now(VIETNAM_TZ)
+  
+  # Xác định năm hiện tại và tháng cần lấy dữ liệu
+  current_year = now.year
+  target_month = month_param if month_param else now.month
+  
+  # Tạo chuỗi start_date định dạng YYYY-MM (ví dụ: "2026-09")
+  start_date_str = f"{current_year}-{target_month:02d}"
+  
+  # Khởi tạo cache cho tháng này nếu chưa có
+  if start_date_str not in performance_caches:
+    performance_caches[start_date_str] = {
+        "data": None,
+        "expire_time": datetime.min.replace(tzinfo=VIETNAM_TZ),
+    }
+    
+  cache_entry = performance_caches[start_date_str]
+
   if (
       not force_refresh
-      and performance_cache["data"] is not None
-      and now < performance_cache["expire_time"]
+      and cache_entry["data"] is not None
+      and now < cache_entry["expire_time"]
   ):
-    return performance_cache["data"]
+    return cache_entry["data"], True
 
   async with httpx.AsyncClient() as client:
     delivery_raw_list, pickup_raw_list = await asyncio.gather(
-        fetch_report_data(client, DELIVERY_API_URL, 0),
-        fetch_report_data(client, PICKUP_API_URL, 2),
+        fetch_report_data(client, DELIVERY_API_URL, 0, start_date_str),
+        fetch_report_data(client, PICKUP_API_URL, 2, start_date_str),
     )
 
   logger.info(
-      "Performance raw data: delivery=%s, pickup=%s",
+      "Performance raw data (Tháng %s): delivery=%s, pickup=%s",
+      start_date_str,
       len(delivery_raw_list),
       len(pickup_raw_list),
   )
@@ -300,10 +314,10 @@ async def get_drivers_performance_data(force_refresh: bool = False):
     riders_map[rider_id]["raw_pickup_rate"] = raw_p_rate
 
   riders = sorted(riders_map.values(), key=lambda x: x["raw_rate"], reverse=True)
-  performance_cache["data"] = riders
-  performance_cache["expire_time"] = now + timedelta(seconds=PERFORMANCE_CACHE_SECONDS)
-  logger.info("Performance processed: %s riders", len(riders))
-  return riders
+  cache_entry["data"] = riders
+  cache_entry["expire_time"] = now + timedelta(seconds=PERFORMANCE_CACHE_SECONDS)
+  logger.info("Performance processed (Tháng %s): %s riders", start_date_str, len(riders))
+  return riders, False
 
 
 async def get_latest_data():
@@ -466,18 +480,14 @@ async def api_dashboard():
 
 
 @app.get("/api/performance")
-async def api_performance(force: str = "0"):
+async def api_performance(month: int = None, force: str = "0"):
   try:
     force_refresh = force.lower() in {"1", "true", "yes", "force"}
-    riders = await get_drivers_performance_data(force_refresh=force_refresh)
+    riders, is_cached = await get_drivers_performance_data(month_param=month, force_refresh=force_refresh)
     return {
         "riders": riders,
         "count": len(riders),
-        "cached": (
-            performance_cache["data"] is riders
-            and datetime.now(VIETNAM_TZ) < performance_cache["expire_time"]
-            and not force_refresh
-        ),
+        "cached": is_cached and not force_refresh,
     }
   except Exception as e:
     logger.exception("Lỗi API /api/performance")
