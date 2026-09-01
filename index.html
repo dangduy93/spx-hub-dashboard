@@ -893,7 +893,7 @@ body {
         </div>
 
 
-        <!-- Title + Search -->
+        <!-- Title + Search & Month Selector -->
         <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
             <div>
@@ -915,15 +915,26 @@ body {
             </div>
 
 
-            <!-- Search -->
-            <div class="relative">
+            <!-- Search & Month Filter Group -->
+            <div class="flex flex-col sm:flex-row items-center gap-3">
 
-                <input type="text"
-                       id="searchInput"
-                       placeholder="Tìm kiếm tài xế, ID, Khu vực..."
-                       class="w-full md:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
+                <!-- Bộ lọc chọn tháng -->
+                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                    <label for="monthSelect" class="text-xs font-semibold text-gray-600 whitespace-nowrap">Tháng:</label>
+                    <select id="monthSelect"
+                            class="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
+                        <!-- Sinh tự động từ JS -->
+                    </select>
+                </div>
 
-                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                <!-- Search -->
+                <div class="relative w-full sm:w-64">
+                    <input type="text"
+                           id="searchInput"
+                           placeholder="Tìm kiếm tài xế, ID, Khu vực..."
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white shadow-sm">
+                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                </div>
 
             </div>
 
@@ -961,7 +972,7 @@ body {
                                 class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 <button type="button"
                                         class="sort-btn flex items-center gap-2 hover:text-blue-600 transition"
-                                        data-sort="id"> <!-- Đổi từ "name" thành "id" -->
+                                        data-sort="id">
 
                                     Rider
 
@@ -1079,7 +1090,7 @@ body {
 
                                 <i class="fas fa-spinner fa-spin text-2xl mb-2 text-blue-500 block"></i>
 
-                                Đang tải dữ liệu hiệu suất driver...
+                                Đang tải dữ liệu hiệu suất...
 
                             </td>
 
@@ -1183,11 +1194,43 @@ let performanceData = [];
 let isShowingAll = false;
 
 let currentTab = 'delivery';
+let selectedMonth = new Date().getMonth() + 1; // Mặc định tháng hiện tại
 
-// Sort mặc định:
-// Tỷ lệ thành công - giảm dần
+// Sort mặc định: Tỷ lệ thành công - giảm dần
 let currentSortField = 'rate';
 let currentSortDirection = 'desc';
+
+
+// ============================================================
+// KHỞI TẠO DROPDOWN CHỌN THÁNG (Từ tháng 1 đến tháng hiện tại)
+// ============================================================
+function initMonthSelector() {
+    const monthSelect = document.getElementById('monthSelect');
+    if (!monthSelect) return;
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // Tháng hiện tại (Ví dụ: 9)
+
+    let optionsHtml = '';
+    
+    // Sinh từ tháng 1 đến tháng hiện tại
+    for (let m = 1; m <= currentMonth; m++) {
+        const selected = (m === currentMonth) ? 'selected' : '';
+        optionsHtml += `<option value="${m}" ${selected}>Tháng ${m} / ${currentYear}</option>`;
+    }
+
+    monthSelect.innerHTML = optionsHtml;
+
+    // Lắng nghe sự kiện thay đổi tháng
+    monthSelect.addEventListener('change', function() {
+        selectedMonth = Number(this.value);
+        console.log("Đã chọn tháng:", selectedMonth);
+        
+        // Gọi lại tải dữ liệu theo tháng (Truyền thêm tham số month nếu backend hỗ trợ)
+        loadPerformanceData(true);
+    });
+}
 
 
 // ============================================================
@@ -1442,7 +1485,6 @@ function sortPerformanceData(rows) {
             getSortValue(b, currentSortField);
 
 
-        // Sort chữ
         if (
             typeof valueA === 'string' &&
             typeof valueB === 'string'
@@ -1457,11 +1499,8 @@ function sortPerformanceData(rows) {
 
         }
 
-
-        // Sort số
         const result =
             valueA - valueB;
-
 
         return currentSortDirection === 'asc'
             ? result
@@ -1491,13 +1530,9 @@ function updateSortIcons() {
 
             if (!icon) return;
 
-
-            // Icon mặc định
             icon.className =
                 'fas fa-sort text-gray-400';
 
-
-            // Cột đang sort
             if (field === currentSortField) {
 
                 if (currentSortDirection === 'asc') {
@@ -1562,17 +1597,9 @@ function renderPerformanceTable() {
         .forEach(row => row.remove());
 
 
-    // ========================================================
-    // SORT
-    // ========================================================
-
     let rows =
         sortPerformanceData(performanceData);
 
-
-    // ========================================================
-    // SEARCH
-    // ========================================================
 
     if (term) {
 
@@ -1591,10 +1618,6 @@ function renderPerformanceTable() {
     }
 
 
-    // ========================================================
-    // NO DATA
-    // ========================================================
-
     if (!performanceData.length) {
 
         noResult.style.display = 'none';
@@ -1606,10 +1629,6 @@ function renderPerformanceTable() {
 
     }
 
-
-    // ========================================================
-    // NO RESULT
-    // ========================================================
 
     if (!rows.length) {
 
@@ -1625,39 +1644,27 @@ function renderPerformanceTable() {
     noResult.style.display = 'none';
 
 
-    // ========================================================
-    // TOP 5 / ALL
-    // ========================================================
-
     const visibleRows =
         term || isShowingAll
             ? rows
             : rows.slice(0, 5);
 
 
-    // ========================================================
-    // RENDER
-    // ========================================================
-
     visibleRows.forEach(rider => {
 
         const khu =
             rider.khu_vuc || 'Chưa xác định';
-
 
         const khuClass =
             khu === 'Khu vực 1'
                 ? 'bg-purple-100 text-purple-800'
                 : 'bg-indigo-100 text-indigo-800';
 
-
         const tr =
             document.createElement('tr');
 
-
         tr.className =
             'hover:bg-gray-50 transition-colors rider-row';
-
 
         tr.innerHTML = `
 
@@ -1758,14 +1765,12 @@ function renderPerformanceTable() {
 
         `;
 
-
         tbody.insertBefore(
             tr,
             noResult
         );
 
     });
-
 
     updateTitleAndSubtitle();
 
@@ -1780,7 +1785,6 @@ async function loadPerformanceData(force = false) {
 
     if (performanceLoading) return;
 
-
     if (
         performanceLoaded &&
         !force
@@ -1792,9 +1796,7 @@ async function loadPerformanceData(force = false) {
 
     }
 
-
     performanceLoading = true;
-
 
     const tbody =
         document.getElementById('riderTableBody');
@@ -1825,9 +1827,10 @@ async function loadPerformanceData(force = false) {
 
     try {
 
+        // Truyền thêm tham số tháng vào API nếu Backend hỗ trợ (ví dụ: ?month=9&force=0)
         const response =
             await fetch(
-                '/api/performance?force=' +
+                `/api/performance?month=${selectedMonth}&force=` +
                 (force ? '1' : '0'),
                 {
                     cache: 'no-store',
@@ -1837,7 +1840,6 @@ async function loadPerformanceData(force = false) {
                     }
                 }
             );
-
 
         const result =
             await response
@@ -1854,20 +1856,16 @@ async function loadPerformanceData(force = false) {
 
         }
 
-
         performanceData =
             Array.isArray(result.riders)
                 ? result.riders
                 : [];
 
-
         performanceLoaded = true;
-
 
         renderPerformanceTable();
 
         updateShiperBadges();
-
 
     }
 
@@ -1878,11 +1876,9 @@ async function loadPerformanceData(force = false) {
             err
         );
 
-
         loading.style.display = 'none';
 
         error.style.display = '';
-
 
         document
             .getElementById(
@@ -1920,8 +1916,8 @@ function updateTitleAndSubtitle() {
 
         title.innerText =
             currentTab === 'delivery'
-                ? 'DANH SÁCH TOÀN BỘ DRIVER - GIAO HÀNG'
-                : 'DANH SÁCH TOÀN BỘ DRIVER - LẤY HÀNG';
+                ? `DANH SÁCH TOÀN BỘ DRIVER - GIAO HÀNG (THÁNG ${selectedMonth})`
+                : `DANH SÁCH TOÀN BỘ DRIVER - LẤY HÀNG (THÁNG ${selectedMonth})`;
 
 
         subtitle.innerText =
@@ -1933,8 +1929,8 @@ function updateTitleAndSubtitle() {
 
         title.innerText =
             currentTab === 'delivery'
-                ? 'TOP 5 DRIVER CÓ TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT'
-                : 'TOP 5 DRIVER CÓ TỶ LỆ LẤY THÀNH CÔNG CAO NHẤT';
+                ? `TOP 5 DRIVER TỶ LỆ GIAO THÀNH CÔNG CAO NHẤT (THÁNG ${selectedMonth})`
+                : `TOP 5 DRIVER TỶ LỆ LẤY THÀNH CÔNG CAO NHẤT (THÁNG ${selectedMonth})`;
 
 
         subtitle.innerText =
@@ -1955,30 +1951,25 @@ document
 
         currentTab = 'delivery';
 
-
         document.getElementById(
             'tabDelivery'
         ).className =
             "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
-
 
         document.getElementById(
             'tabPickup'
         ).className =
             "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
 
-
         document.getElementById(
             'colHeaderMetric'
         ).innerText =
             'Đơn Giao';
 
-
         document.getElementById(
             'colHeaderSuccess'
         ).innerText =
             'Thành Công';
-
 
         renderPerformanceTable();
 
@@ -1995,30 +1986,25 @@ document
 
         currentTab = 'pickup';
 
-
         document.getElementById(
             'tabPickup'
         ).className =
             "px-4 py-2 bg-blue-600 text-white font-medium text-sm rounded-lg shadow transition-all flex items-center";
-
 
         document.getElementById(
             'tabDelivery'
         ).className =
             "px-4 py-2 bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 font-medium text-sm rounded-lg shadow-sm transition-all flex items-center";
 
-
         document.getElementById(
             'colHeaderMetric'
         ).innerText =
             'Đơn Lấy';
 
-
         document.getElementById(
             'colHeaderSuccess'
         ).innerText =
             'Lấy Thành Công';
-
 
         renderPerformanceTable();
 
@@ -2040,8 +2026,6 @@ document
                 const field =
                     this.dataset.sort;
 
-
-                // Nếu bấm lại cùng cột
                 if (
                     currentSortField === field
                 ) {
@@ -2052,18 +2036,12 @@ document
                             : 'asc';
 
                 }
-
-                // Nếu chuyển sang cột khác
                 else {
 
                     currentSortField = field;
-
-                    // Mặc định cột mới:
-                    // giảm dần
                     currentSortDirection = 'desc';
 
                 }
-
 
                 updateSortIcons();
 
@@ -2088,11 +2066,9 @@ document
             isShowingAll =
                 !isShowingAll;
 
-
             document.getElementById(
                 'searchInput'
             ).value = '';
-
 
             document.getElementById(
                 'toggleText'
@@ -2101,7 +2077,6 @@ document
                     ? 'Thu gọn Top 5'
                     : 'Xem toàn bộ driver';
 
-
             document.getElementById(
                 'toggleIcon'
             ).className =
@@ -2109,18 +2084,15 @@ document
                     ? 'fas fa-chevron-up mr-2'
                     : 'fas fa-list mr-2';
 
-
             this.classList.toggle(
                 'bg-gray-700',
                 isShowingAll
             );
 
-
             this.classList.toggle(
                 'bg-gray-800',
                 !isShowingAll
             );
-
 
             renderPerformanceTable();
 
@@ -2139,6 +2111,11 @@ document
         renderPerformanceTable
     );
 
+
+// ============================================================
+// RENDER DRIVER LIST (DASHBOARD)
+// ============================================================
+
 function renderDriverList(
     drivers,
     containerId,
@@ -2151,7 +2128,6 @@ function renderDriverList(
             containerId
         );
 
-
     if (
         !drivers ||
         drivers.length === 0
@@ -2160,17 +2136,14 @@ function renderDriverList(
         container.innerHTML =
             '<div class="text-xs text-slate-400 italic">Không có driver hoạt động</div>';
 
-
         document.getElementById(
             countId
         ).innerText =
             '0 driver';
 
-
         return;
 
     }
-
 
     const sortedDrivers =
         [...drivers].sort(
@@ -2179,7 +2152,6 @@ function renderDriverList(
                 a.dang_giao
         );
 
-
     container.innerHTML =
         sortedDrivers
             .map((d, index) => {
@@ -2187,24 +2159,15 @@ function renderDriverList(
                 let rankBadgeClass =
                     "bg-slate-100 text-slate-600";
 
-
                 if (index === 0)
-
                     rankBadgeClass =
                         "bg-amber-100 text-amber-700 font-bold";
-
-
                 else if (index === 1)
-
                     rankBadgeClass =
                         "bg-slate-200 text-slate-700 font-bold";
-
-
                 else if (index === 2)
-
                     rankBadgeClass =
                         "bg-orange-100 text-orange-700 font-bold";
-
 
                 return `
 
@@ -2231,7 +2194,6 @@ function renderDriverList(
 
                             </span>
 
-
                             <span class="text-slate-500 font-mono text-[11px]">
 
                                 ID:
@@ -2240,7 +2202,6 @@ function renderDriverList(
                             </span>
 
                         </div>
-
 
                         <div class="grid grid-cols-3 gap-1 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60">
 
@@ -2274,7 +2235,6 @@ function renderDriverList(
             })
             .join('');
 
-
     document.getElementById(
         countId
     ).innerText =
@@ -2292,11 +2252,6 @@ function updateDashboardUI(
     isFromCache = false
 ) {
 
-
-    // --------------------------------------------------------
-    // ORDERS
-    // --------------------------------------------------------
-
     if (
         data.tong_don_giao_kv1 !== undefined
     ) {
@@ -2308,14 +2263,12 @@ function updateDashboardUI(
                 data.tong_don_giao_kv1
             ).toLocaleString('vi-VN');
 
-
         document.getElementById(
             'total-orders-kv2'
         ).innerText =
             Number(
                 data.tong_don_giao_kv2
             ).toLocaleString('vi-VN');
-
 
         document.getElementById(
             'group-total-orders'
@@ -2331,11 +2284,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // INVENTORY CHƯA ATTEM
-    // --------------------------------------------------------
-
     if (
         data.tong_don_ton_kho_chua_attem_kv1 !== undefined
     ) {
@@ -2347,14 +2295,12 @@ function updateDashboardUI(
                 data.tong_don_ton_kho_chua_attem_kv1
             ).toLocaleString('vi-VN');
 
-
         document.getElementById(
             'total-inventory-kv2'
         ).innerText =
             Number(
                 data.tong_don_ton_kho_chua_attem_kv2
             ).toLocaleString('vi-VN');
-
 
         document.getElementById(
             'group-total-inventory'
@@ -2370,11 +2316,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // INVENTORY ĐÃ ATTEM
-    // --------------------------------------------------------
-
     if (
         data.tong_don_ton_kho_da_attem_kv1 !== undefined
     ) {
@@ -2386,14 +2327,12 @@ function updateDashboardUI(
                 data.tong_don_ton_kho_da_attem_kv1
             ).toLocaleString('vi-VN');
 
-
         document.getElementById(
             'total-inventory-attempted-kv2'
         ).innerText =
             Number(
                 data.tong_don_ton_kho_da_attem_kv2
             ).toLocaleString('vi-VN');
-
 
         document.getElementById(
             'group-total-attempted'
@@ -2409,11 +2348,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // WAREHOUSE
-    // --------------------------------------------------------
-
     if (
         data.du_bao_warehouse_kv1 !== undefined
     ) {
@@ -2425,14 +2359,12 @@ function updateDashboardUI(
                 data.du_bao_warehouse_kv1
             ).toLocaleString('vi-VN');
 
-
         document.getElementById(
             'forecast-warehouse-kv2'
         ).innerText =
             Number(
                 data.du_bao_warehouse_kv2
             ).toLocaleString('vi-VN');
-
 
         document.getElementById(
             'group-total-warehouse'
@@ -2448,11 +2380,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // PICKUP
-    // --------------------------------------------------------
-
     if (
         data.du_bao_pickup_kv1 !== undefined
     ) {
@@ -2464,14 +2391,12 @@ function updateDashboardUI(
                 data.du_bao_pickup_kv1
             ).toLocaleString('vi-VN');
 
-
         document.getElementById(
             'forecast-pickup-kv2'
         ).innerText =
             Number(
                 data.du_bao_pickup_kv2
             ).toLocaleString('vi-VN');
-
 
         document.getElementById(
             'group-total-pickup'
@@ -2487,11 +2412,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // DRIVER KV1
-    // --------------------------------------------------------
-
     if (data.drivers_detail_kv1) {
 
         renderDriverList(
@@ -2502,11 +2422,6 @@ function updateDashboardUI(
         );
 
     }
-
-
-    // --------------------------------------------------------
-    // DRIVER KV2
-    // --------------------------------------------------------
 
     if (data.drivers_detail_kv2) {
 
@@ -2519,39 +2434,26 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // TOTAL DRIVER
-    // --------------------------------------------------------
-
     const totalDriversCount =
         (
             data.drivers_detail_kv1
                 ? data.drivers_detail_kv1.length
                 : 0
         ) +
-
         (
             data.drivers_detail_kv2
                 ? data.drivers_detail_kv2.length
                 : 0
         );
 
-
     document.getElementById(
         'group-total-drivers'
     ).innerText =
         totalDriversCount.toLocaleString('vi-VN');
 
-
     updateShiperBadges(
         totalDriversCount
     );
-
-
-    // --------------------------------------------------------
-    // HUB
-    // --------------------------------------------------------
 
     if (data.ten_hub) {
 
@@ -2561,18 +2463,12 @@ function updateDashboardUI(
             "Tổng quan - " +
             data.ten_hub;
 
-
         document.getElementById(
             'hub-location-name'
         ).innerText =
             data.ten_hub;
 
     }
-
-
-    // --------------------------------------------------------
-    // API STATUS
-    // --------------------------------------------------------
 
     if (
         data.trang_thai_api &&
@@ -2586,11 +2482,6 @@ function updateDashboardUI(
 
     }
 
-
-    // --------------------------------------------------------
-    // TIME
-    // --------------------------------------------------------
-
     const timeString =
         isFromCache
             ? "Đang đồng bộ..."
@@ -2599,53 +2490,26 @@ function updateDashboardUI(
                 new Date().toLocaleTimeString('vi-VN')
             );
 
-
     const timeIds = [
-
-        'update-time-kv1',
-        'update-time-kv2',
-
-        'inventory-time-kv1',
-        'inventory-time-kv2',
-
-        'attempted-time-kv1',
-        'attempted-time-kv2',
-
-        'warehouse-time-kv1',
-        'warehouse-time-kv2',
-
-        'pickup-time-kv1',
-        'pickup-time-kv2'
-
+        'update-time-kv1', 'update-time-kv2',
+        'inventory-time-kv1', 'inventory-time-kv2',
+        'attempted-time-kv1', 'attempted-time-kv2',
+        'warehouse-time-kv1', 'warehouse-time-kv2',
+        'pickup-time-kv1', 'pickup-time-kv2'
     ];
 
-
     timeIds.forEach(id => {
-
-        const el =
-            document.getElementById(id);
-
+        const el = document.getElementById(id);
         if (el) {
-
-            el.innerText =
-                timeString;
-
+            el.innerText = timeString;
         }
-
     });
 
-
-    // --------------------------------------------------------
-    // CACHE
-    // --------------------------------------------------------
-
     if (!isFromCache) {
-
         localStorage.setItem(
             'spx_cached_dashboard_data',
             JSON.stringify(data)
         );
-
     }
 
 }
@@ -2660,7 +2524,6 @@ function connectSSE() {
     const eventSource =
         new EventSource('/api/stream');
 
-
     eventSource.addEventListener(
         'update',
         function (event) {
@@ -2671,7 +2534,6 @@ function connectSSE() {
                     JSON.parse(
                         event.data
                     );
-
 
                 updateDashboardUI(
                     data,
@@ -2692,7 +2554,6 @@ function connectSSE() {
         }
     );
 
-
     eventSource.onerror = function () {
 
         document.getElementById(
@@ -2700,9 +2561,7 @@ function connectSSE() {
         ).innerHTML =
             `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Mất kết nối, đang thử lại...`;
 
-
         eventSource.close();
-
 
         setTimeout(
             connectSSE,
@@ -2722,16 +2581,10 @@ document.addEventListener(
     'DOMContentLoaded',
     () => {
 
-
-        // ----------------------------------------------------
-        // CACHE
-        // ----------------------------------------------------
-
         const cachedString =
             localStorage.getItem(
                 'spx_cached_dashboard_data'
             );
-
 
         if (cachedString) {
 
@@ -2742,12 +2595,10 @@ document.addEventListener(
                         cachedString
                     );
 
-
                 updateDashboardUI(
                     cachedData,
                     true
                 );
-
 
                 document.getElementById(
                     'api-status-text'
@@ -2767,24 +2618,12 @@ document.addEventListener(
 
         }
 
-
-        // ----------------------------------------------------
-        // SORT ICON INIT
-        // ----------------------------------------------------
+        // Khởi tạo danh sách tháng từ Tháng 1 đến tháng hiện tại
+        initMonthSelector();
 
         updateSortIcons();
 
-
-        // ----------------------------------------------------
-        // SSE
-        // ----------------------------------------------------
-
         connectSSE();
-
-
-        // ----------------------------------------------------
-        // PERFORMANCE
-        // ----------------------------------------------------
 
         loadPerformanceData(false);
 
@@ -2795,4 +2634,3 @@ document.addEventListener(
 
 </body>
 </html>
-```
